@@ -1,0 +1,19 @@
+# Backend (Python / Flask)
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/instance/*.db
+backend/.env
+
+# Frontend (Node / Vite)
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Claude Code local settings
+.claude/
