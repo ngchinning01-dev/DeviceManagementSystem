@@ -6,6 +6,7 @@ const emptyForm = { name: '', email: '', department: '' }
 function Users() {
   const [users, setUsers] = useState([])
   const [form, setForm] = useState(emptyForm)
+  const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState(null)
 
   const loadUsers = () => {
@@ -19,19 +20,36 @@ function Users() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    apiClient
-      .post('/users', form)
+    const request = editingId
+      ? apiClient.put(`/users/${editingId}`, form)
+      : apiClient.post('/users', form)
+
+    request
       .then(() => {
         setForm(emptyForm)
+        setEditingId(null)
         loadUsers()
       })
       .catch((err) => setError(err.message))
   }
 
+  const handleEdit = (user) => {
+    setEditingId(user.user_id)
+    setForm({ name: user.name, email: user.email, department: user.department ?? '' })
+  }
+
+  const handleCancel = () => {
+    setEditingId(null)
+    setForm(emptyForm)
+  }
+
   const handleDelete = (id) => {
     apiClient
       .delete(`/users/${id}`)
-      .then(loadUsers)
+      .then(() => {
+        if (editingId === id) handleCancel()
+        loadUsers()
+      })
       .catch((err) => setError(err.message))
   }
 
@@ -76,8 +94,17 @@ function Users() {
           type="submit"
           className="bg-slate-800 text-white text-sm rounded px-4 py-1.5 hover:bg-slate-700"
         >
-          Add User
+          {editingId ? 'Save Changes' : 'Add User'}
         </button>
+        {editingId && (
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="bg-slate-200 text-slate-700 text-sm rounded px-4 py-1.5 hover:bg-slate-300"
+          >
+            Cancel
+          </button>
+        )}
       </form>
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -98,7 +125,13 @@ function Users() {
                 <td className="px-4 py-2">{user.name}</td>
                 <td className="px-4 py-2">{user.email}</td>
                 <td className="px-4 py-2">{user.department}</td>
-                <td className="px-4 py-2 text-right">
+                <td className="px-4 py-2 text-right space-x-3">
+                  <button
+                    onClick={() => handleEdit(user)}
+                    className="text-slate-600 hover:underline text-xs"
+                  >
+                    Edit
+                  </button>
                   <button
                     onClick={() => handleDelete(user.user_id)}
                     className="text-red-600 hover:underline text-xs"

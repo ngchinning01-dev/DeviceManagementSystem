@@ -16,6 +16,7 @@ function Devices() {
   const [branches, setBranches] = useState([])
   const [users, setUsers] = useState([])
   const [form, setForm] = useState(emptyForm)
+  const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState(null)
 
   const loadDevices = () => {
@@ -33,23 +34,49 @@ function Devices() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    apiClient
-      .post('/devices', {
-        ...form,
-        branch_id: Number(form.branch_id) || null,
-        assigned_user_id: Number(form.assigned_user_id) || null,
-      })
+    const payload = {
+      ...form,
+      branch_id: Number(form.branch_id) || null,
+      assigned_user_id: Number(form.assigned_user_id) || null,
+    }
+    const request = editingId
+      ? apiClient.put(`/devices/${editingId}`, payload)
+      : apiClient.post('/devices', payload)
+
+    request
       .then(() => {
         setForm(emptyForm)
+        setEditingId(null)
         loadDevices()
       })
       .catch((err) => setError(err.message))
   }
 
+  const handleEdit = (device) => {
+    setEditingId(device.device_id)
+    setForm({
+      device_name: device.device_name,
+      device_type: device.device_type,
+      serial_number: device.serial_number ?? '',
+      ip_address: device.ip_address ?? '',
+      status: device.status,
+      branch_id: device.branch_id ?? '',
+      assigned_user_id: device.assigned_user_id ?? '',
+    })
+  }
+
+  const handleCancel = () => {
+    setEditingId(null)
+    setForm(emptyForm)
+  }
+
   const handleDelete = (id) => {
     apiClient
       .delete(`/devices/${id}`)
-      .then(loadDevices)
+      .then(() => {
+        if (editingId === id) handleCancel()
+        loadDevices()
+      })
       .catch((err) => setError(err.message))
   }
 
@@ -145,8 +172,17 @@ function Devices() {
           type="submit"
           className="col-span-2 sm:col-span-4 lg:col-span-1 bg-slate-800 text-white text-sm rounded px-4 py-1.5 hover:bg-slate-700"
         >
-          Add Device
+          {editingId ? 'Save Changes' : 'Add Device'}
         </button>
+        {editingId && (
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="col-span-2 sm:col-span-4 lg:col-span-1 bg-slate-200 text-slate-700 text-sm rounded px-4 py-1.5 hover:bg-slate-300"
+          >
+            Cancel
+          </button>
+        )}
       </form>
 
       <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
@@ -175,7 +211,13 @@ function Devices() {
                 <td className="px-4 py-2">{device.status}</td>
                 <td className="px-4 py-2">{device.branch_name}</td>
                 <td className="px-4 py-2">{device.assigned_user_name ?? '—'}</td>
-                <td className="px-4 py-2 text-right">
+                <td className="px-4 py-2 text-right space-x-3">
+                  <button
+                    onClick={() => handleEdit(device)}
+                    className="text-slate-600 hover:underline text-xs"
+                  >
+                    Edit
+                  </button>
                   <button
                     onClick={() => handleDelete(device.device_id)}
                     className="text-red-600 hover:underline text-xs"

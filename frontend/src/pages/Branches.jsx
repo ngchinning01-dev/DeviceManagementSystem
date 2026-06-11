@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import apiClient from '../api/client'
 
+const emptyForm = { branch_name: '', location: '' }
+
 function Branches() {
   const [branches, setBranches] = useState([])
-  const [form, setForm] = useState({ branch_name: '', location: '' })
+  const [form, setForm] = useState(emptyForm)
+  const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState(null)
 
   const loadBranches = () => {
@@ -17,19 +20,36 @@ function Branches() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    apiClient
-      .post('/branches', form)
+    const request = editingId
+      ? apiClient.put(`/branches/${editingId}`, form)
+      : apiClient.post('/branches', form)
+
+    request
       .then(() => {
-        setForm({ branch_name: '', location: '' })
+        setForm(emptyForm)
+        setEditingId(null)
         loadBranches()
       })
       .catch((err) => setError(err.message))
   }
 
+  const handleEdit = (branch) => {
+    setEditingId(branch.branch_id)
+    setForm({ branch_name: branch.branch_name, location: branch.location ?? '' })
+  }
+
+  const handleCancel = () => {
+    setEditingId(null)
+    setForm(emptyForm)
+  }
+
   const handleDelete = (id) => {
     apiClient
       .delete(`/branches/${id}`)
-      .then(loadBranches)
+      .then(() => {
+        if (editingId === id) handleCancel()
+        loadBranches()
+      })
       .catch((err) => setError(err.message))
   }
 
@@ -65,8 +85,17 @@ function Branches() {
           type="submit"
           className="bg-slate-800 text-white text-sm rounded px-4 py-1.5 hover:bg-slate-700"
         >
-          Add Branch
+          {editingId ? 'Save Changes' : 'Add Branch'}
         </button>
+        {editingId && (
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="bg-slate-200 text-slate-700 text-sm rounded px-4 py-1.5 hover:bg-slate-300"
+          >
+            Cancel
+          </button>
+        )}
       </form>
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -85,7 +114,13 @@ function Branches() {
                 <td className="px-4 py-2">{branch.branch_id}</td>
                 <td className="px-4 py-2">{branch.branch_name}</td>
                 <td className="px-4 py-2">{branch.location}</td>
-                <td className="px-4 py-2 text-right">
+                <td className="px-4 py-2 text-right space-x-3">
+                  <button
+                    onClick={() => handleEdit(branch)}
+                    className="text-slate-600 hover:underline text-xs"
+                  >
+                    Edit
+                  </button>
                   <button
                     onClick={() => handleDelete(branch.branch_id)}
                     className="text-red-600 hover:underline text-xs"
