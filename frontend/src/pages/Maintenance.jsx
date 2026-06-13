@@ -3,12 +3,15 @@ import apiClient from '../api/client'
 
 const emptyForm = { device_id: '', issue: '', solution: '', date: '' }
 
+// Maintenance page: lists maintenance records and provides a form to log new ones
+// against an existing device (no edit support, only add/delete).
 function Maintenance() {
   const [records, setRecords] = useState([])
   const [devices, setDevices] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [error, setError] = useState(null)
 
+  // Fetch the maintenance record list from the API.
   const loadRecords = () => {
     apiClient
       .get('/maintenance')
@@ -16,11 +19,13 @@ function Maintenance() {
       .catch((err) => setError(err.message))
   }
 
+  // Load records plus the device list needed to populate the form dropdown.
   useEffect(() => {
     loadRecords()
     apiClient.get('/devices').then((res) => setDevices(res.data)).catch(() => {})
   }, [])
 
+  // Create a new maintenance record for the selected device.
   const handleSubmit = (e) => {
     e.preventDefault()
     apiClient
@@ -32,6 +37,7 @@ function Maintenance() {
       .catch((err) => setError(err.message))
   }
 
+  // Delete a maintenance record and refresh the list.
   const handleDelete = (id) => {
     apiClient
       .delete(`/maintenance/${id}`)

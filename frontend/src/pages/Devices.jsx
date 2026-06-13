@@ -11,6 +11,8 @@ const emptyForm = {
   assigned_user_id: '',
 }
 
+// Devices page: lists devices and provides a form to create, edit, and delete them,
+// including assigning a branch and (optionally) a user to each device.
 function Devices() {
   const [devices, setDevices] = useState([])
   const [branches, setBranches] = useState([])
@@ -19,6 +21,7 @@ function Devices() {
   const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState(null)
 
+  // Fetch the device list from the API.
   const loadDevices = () => {
     apiClient
       .get('/devices')
@@ -26,12 +29,14 @@ function Devices() {
       .catch((err) => setError(err.message))
   }
 
+  // Load devices plus the branches/users needed to populate the form dropdowns.
   useEffect(() => {
     loadDevices()
     apiClient.get('/branches').then((res) => setBranches(res.data)).catch(() => {})
     apiClient.get('/users').then((res) => setUsers(res.data)).catch(() => {})
   }, [])
 
+  // Create a new device, or save changes if editing an existing one.
   const handleSubmit = (e) => {
     e.preventDefault()
     const payload = {
@@ -52,6 +57,7 @@ function Devices() {
       .catch((err) => setError(err.message))
   }
 
+  // Populate the form with an existing device's data for editing.
   const handleEdit = (device) => {
     setEditingId(device.device_id)
     setForm({
@@ -65,11 +71,13 @@ function Devices() {
     })
   }
 
+  // Exit edit mode and reset the form.
   const handleCancel = () => {
     setEditingId(null)
     setForm(emptyForm)
   }
 
+  // Delete a device and refresh the list.
   const handleDelete = (id) => {
     apiClient
       .delete(`/devices/${id}`)

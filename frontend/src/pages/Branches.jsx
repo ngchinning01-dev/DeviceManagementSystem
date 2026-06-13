@@ -3,12 +3,14 @@ import apiClient from '../api/client'
 
 const emptyForm = { branch_name: '', location: '' }
 
+// Branches page: lists branches and provides a form to create, edit, and delete them.
 function Branches() {
   const [branches, setBranches] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState(null)
 
+  // Fetch the branch list from the API.
   const loadBranches = () => {
     apiClient
       .get('/branches')
@@ -18,6 +20,7 @@ function Branches() {
 
   useEffect(loadBranches, [])
 
+  // Create a new branch, or save changes if editing an existing one.
   const handleSubmit = (e) => {
     e.preventDefault()
     const request = editingId
@@ -33,16 +36,19 @@ function Branches() {
       .catch((err) => setError(err.message))
   }
 
+  // Populate the form with an existing branch's data for editing.
   const handleEdit = (branch) => {
     setEditingId(branch.branch_id)
     setForm({ branch_name: branch.branch_name, location: branch.location ?? '' })
   }
 
+  // Exit edit mode and reset the form.
   const handleCancel = () => {
     setEditingId(null)
     setForm(emptyForm)
   }
 
+  // Delete a branch and refresh the list.
   const handleDelete = (id) => {
     apiClient
       .delete(`/branches/${id}`)

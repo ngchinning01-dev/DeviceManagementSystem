@@ -3,21 +3,25 @@ from flask import Blueprint, jsonify, request
 from app.extensions import db
 from app.models import Branch
 
+# CRUD API for branches (/api/branches).
 branches_bp = Blueprint('branches', __name__, url_prefix='/api/branches')
 
 
+# List all branches.
 @branches_bp.get('')
 def list_branches():
     branches = Branch.query.order_by(Branch.branch_id).all()
     return jsonify([b.to_dict() for b in branches])
 
 
+# Get a single branch by ID.
 @branches_bp.get('/<int:branch_id>')
 def get_branch(branch_id):
     branch = db.get_or_404(Branch, branch_id)
     return jsonify(branch.to_dict())
 
 
+# Create a new branch.
 @branches_bp.post('')
 def create_branch():
     data = request.get_json() or {}
@@ -30,6 +34,7 @@ def create_branch():
     return jsonify(branch.to_dict()), 201
 
 
+# Update an existing branch's name/location.
 @branches_bp.put('/<int:branch_id>')
 def update_branch(branch_id):
     branch = db.get_or_404(Branch, branch_id)
@@ -41,6 +46,7 @@ def update_branch(branch_id):
     return jsonify(branch.to_dict())
 
 
+# Delete a branch (and its devices, via cascade).
 @branches_bp.delete('/<int:branch_id>')
 def delete_branch(branch_id):
     branch = db.get_or_404(Branch, branch_id)

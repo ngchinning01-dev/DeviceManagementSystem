@@ -1,8 +1,11 @@
+# SQLAlchemy models for the device management database, plus to_dict() serializers
+# used to build JSON API responses.
 from datetime import date
 
 from app.extensions import db
 
 
+# A physical branch/site that devices belong to.
 class Branch(db.Model):
     __tablename__ = 'branches'
 
@@ -20,6 +23,7 @@ class Branch(db.Model):
         }
 
 
+# A person that devices can be assigned to.
 class User(db.Model):
     __tablename__ = 'users'
 
@@ -39,6 +43,7 @@ class User(db.Model):
         }
 
 
+# A managed device, linked to its branch, optional assigned user, and maintenance history.
 class Device(db.Model):
     __tablename__ = 'devices'
 
@@ -73,6 +78,7 @@ class Device(db.Model):
         }
 
 
+# A maintenance/repair record logged against a device.
 class Maintenance(db.Model):
     __tablename__ = 'maintenance_records'
 

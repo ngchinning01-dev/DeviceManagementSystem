@@ -3,21 +3,25 @@ from flask import Blueprint, jsonify, request
 from app.extensions import db
 from app.models import User
 
+# CRUD API for users (/api/users).
 users_bp = Blueprint('users', __name__, url_prefix='/api/users')
 
 
+# List all users.
 @users_bp.get('')
 def list_users():
     users = User.query.order_by(User.user_id).all()
     return jsonify([u.to_dict() for u in users])
 
 
+# Get a single user by ID.
 @users_bp.get('/<int:user_id>')
 def get_user(user_id):
     user = db.get_or_404(User, user_id)
     return jsonify(user.to_dict())
 
 
+# Create a new user (email must be unique).
 @users_bp.post('')
 def create_user():
     data = request.get_json() or {}
@@ -33,6 +37,7 @@ def create_user():
     return jsonify(user.to_dict()), 201
 
 
+# Update an existing user's details.
 @users_bp.put('/<int:user_id>')
 def update_user(user_id):
     user = db.get_or_404(User, user_id)
@@ -45,6 +50,7 @@ def update_user(user_id):
     return jsonify(user.to_dict())
 
 
+# Delete a user.
 @users_bp.delete('/<int:user_id>')
 def delete_user(user_id):
     user = db.get_or_404(User, user_id)

@@ -5,13 +5,16 @@ from flask import Blueprint, jsonify, request
 from app.extensions import db
 from app.models import Device, Maintenance
 
+# CRUD API for maintenance records (/api/maintenance).
 maintenance_bp = Blueprint('maintenance', __name__, url_prefix='/api/maintenance')
 
 
+# Parse a 'YYYY-MM-DD' string into a date object; raises ValueError if invalid.
 def _parse_date(value):
     return datetime.strptime(value, '%Y-%m-%d').date()
 
 
+# List maintenance records (most recent first), optionally filtered by device_id.
 @maintenance_bp.get('')
 def list_maintenance():
     query = Maintenance.query
@@ -24,12 +27,14 @@ def list_maintenance():
     return jsonify([m.to_dict() for m in records])
 
 
+# Get a single maintenance record by ID.
 @maintenance_bp.get('/<int:maintenance_id>')
 def get_maintenance(maintenance_id):
     record = db.get_or_404(Maintenance, maintenance_id)
     return jsonify(record.to_dict())
 
 
+# Create a new maintenance record for an existing device.
 @maintenance_bp.post('')
 def create_maintenance():
     data = request.get_json() or {}
@@ -56,6 +61,7 @@ def create_maintenance():
     return jsonify(record.to_dict()), 201
 
 
+# Update an existing maintenance record's issue, solution, and/or date.
 @maintenance_bp.put('/<int:maintenance_id>')
 def update_maintenance(maintenance_id):
     record = db.get_or_404(Maintenance, maintenance_id)
@@ -75,6 +81,7 @@ def update_maintenance(maintenance_id):
     return jsonify(record.to_dict())
 
 
+# Delete a maintenance record.
 @maintenance_bp.delete('/<int:maintenance_id>')
 def delete_maintenance(maintenance_id):
     record = db.get_or_404(Maintenance, maintenance_id)

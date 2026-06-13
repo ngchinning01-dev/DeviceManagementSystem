@@ -3,9 +3,11 @@ from flask import Blueprint, jsonify, request
 from app.extensions import db
 from app.models import Branch, Device, User
 
+# CRUD API for devices (/api/devices).
 devices_bp = Blueprint('devices', __name__, url_prefix='/api/devices')
 
 
+# List devices, optionally filtered by branch_id and/or status query params.
 @devices_bp.get('')
 def list_devices():
     query = Device.query
@@ -22,12 +24,14 @@ def list_devices():
     return jsonify([d.to_dict() for d in devices])
 
 
+# Get a single device by ID.
 @devices_bp.get('/<int:device_id>')
 def get_device(device_id):
     device = db.get_or_404(Device, device_id)
     return jsonify(device.to_dict())
 
 
+# Create a new device, validating that its branch and (optional) assigned user exist.
 @devices_bp.post('')
 def create_device():
     data = request.get_json() or {}
@@ -58,6 +62,7 @@ def create_device():
     return jsonify(device.to_dict()), 201
 
 
+# Update device fields, re-validating branch/assigned user if those are changed.
 @devices_bp.put('/<int:device_id>')
 def update_device(device_id):
     device = db.get_or_404(Device, device_id)
@@ -82,6 +87,7 @@ def update_device(device_id):
     return jsonify(device.to_dict())
 
 
+# Delete a device (and its maintenance records, via cascade).
 @devices_bp.delete('/<int:device_id>')
 def delete_device(device_id):
     device = db.get_or_404(Device, device_id)

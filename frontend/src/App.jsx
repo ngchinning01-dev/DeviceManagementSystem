@@ -6,6 +6,7 @@ import Devices from './pages/Devices'
 import Users from './pages/Users'
 import Maintenance from './pages/Maintenance'
 
+// Defines the page routes, all rendered inside the shared Layout (sidebar + content area).
 function App() {
   return (
     <Routes>

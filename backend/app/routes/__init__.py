@@ -5,6 +5,7 @@ from app.routes.maintenance import maintenance_bp
 from app.routes.users import users_bp
 
 
+# Registers all API blueprints (one per resource) on the Flask app.
 def register_blueprints(app):
     app.register_blueprint(branches_bp)
     app.register_blueprint(devices_bp)

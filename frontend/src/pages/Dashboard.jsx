@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import apiClient from '../api/client'
 
+// Small card displaying a single labeled stat.
 function StatCard({ label, value }) {
   return (
     <div className="rounded-lg bg-white p-4 shadow-sm">
@@ -10,10 +11,12 @@ function StatCard({ label, value }) {
   )
 }
 
+// Dashboard page: fetches summary stats from the API and shows them as stat cards.
 function Dashboard() {
   const [stats, setStats] = useState(null)
   const [error, setError] = useState(null)
 
+  // Load summary stats once on mount.
   useEffect(() => {
     apiClient
       .get('/dashboard/summary')

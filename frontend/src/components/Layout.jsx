@@ -1,3 +1,4 @@
+// Sidebar navigation links shown on every page.
 import { NavLink, Outlet } from 'react-router-dom'
 
 const navItems = [
@@ -8,6 +9,7 @@ const navItems = [
   { to: '/maintenance', label: 'Maintenance' },
 ]
 
+// Page shell: a fixed sidebar with navigation plus the current route's content (Outlet).
 function Layout() {
   return (
     <div className="flex min-h-screen">

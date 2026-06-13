@@ -1,3 +1,4 @@
+// Shared Axios instance configured with the backend API base URL.
 import axios from 'axios'
 
 const apiClient = axios.create({

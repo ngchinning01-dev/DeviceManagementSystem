@@ -3,9 +3,12 @@ from flask import Blueprint, jsonify
 from app.extensions import db
 from app.models import Branch, Device, Maintenance
 
+# API for dashboard summary statistics (/api/dashboard).
 dashboard_bp = Blueprint('dashboard', __name__, url_prefix='/api/dashboard')
 
 
+# Aggregate counts and breakdowns used by the dashboard page (devices, branches,
+# active devices, open maintenance issues, and devices grouped by status/branch).
 @dashboard_bp.get('/summary')
 def summary():
     total_devices = db.session.query(Device).count()

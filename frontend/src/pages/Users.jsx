@@ -3,12 +3,14 @@ import apiClient from '../api/client'
 
 const emptyForm = { name: '', email: '', department: '' }
 
+// Users page: lists users and provides a form to create, edit, and delete them.
 function Users() {
   const [users, setUsers] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState(null)
 
+  // Fetch the user list from the API.
   const loadUsers = () => {
     apiClient
       .get('/users')
@@ -18,6 +20,7 @@ function Users() {
 
   useEffect(loadUsers, [])
 
+  // Create a new user, or save changes if editing an existing one.
   const handleSubmit = (e) => {
     e.preventDefault()
     const request = editingId
@@ -33,16 +36,19 @@ function Users() {
       .catch((err) => setError(err.message))
   }
 
+  // Populate the form with an existing user's data for editing.
   const handleEdit = (user) => {
     setEditingId(user.user_id)
     setForm({ name: user.name, email: user.email, department: user.department ?? '' })
   }
 
+  // Exit edit mode and reset the form.
   const handleCancel = () => {
     setEditingId(null)
     setForm(emptyForm)
   }
 
+  // Delete a user and refresh the list.
   const handleDelete = (id) => {
     apiClient
       .delete(`/users/${id}`)
