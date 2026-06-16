@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import apiClient from '../api/client'
+import ExcelImport from '../components/ExcelImport'
 
 const emptyForm = {
   device_name: '',
@@ -20,11 +22,22 @@ function Devices() {
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState(null)
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  // Fetch the device list from the API.
+  const branchFilter = searchParams.get('branch_id')
+  const statusFilter = searchParams.get('status')
+  const assignedUserFilter = searchParams.get('assigned_user_id')
+
+  // Fetch the device list from the API, applying any active filters.
   const loadDevices = () => {
     apiClient
-      .get('/devices')
+      .get('/devices', {
+        params: {
+          branch_id: branchFilter || undefined,
+          status: statusFilter || undefined,
+          assigned_user_id: assignedUserFilter || undefined,
+        },
+      })
       .then((res) => setDevices(res.data))
       .catch((err) => setError(err.message))
   }
@@ -34,7 +47,7 @@ function Devices() {
     loadDevices()
     apiClient.get('/branches').then((res) => setBranches(res.data)).catch(() => {})
     apiClient.get('/users').then((res) => setUsers(res.data)).catch(() => {})
-  }, [])
+  }, [branchFilter, statusFilter, assignedUserFilter])
 
   // Create a new device, or save changes if editing an existing one.
   const handleSubmit = (e) => {
@@ -90,7 +103,25 @@ function Devices() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-slate-800 mb-4">Devices</h2>
+      <div className="flex justify-between items-start mb-4">
+        <h2 className="text-xl font-semibold text-slate-800">Devices</h2>
+        <ExcelImport importUrl="/devices/import" onImported={loadDevices} />
+      </div>
+
+      {(branchFilter || statusFilter || assignedUserFilter) && (
+        <p className="text-sm text-slate-600 mb-4 bg-slate-100 rounded px-3 py-2">
+          Showing devices
+          {branchFilter &&
+            ` in branch "${branches.find((b) => String(b.branch_id) === branchFilter)?.branch_name ?? branchFilter}"`}
+          {statusFilter && ` with status "${statusFilter}"`}
+          {assignedUserFilter &&
+            ` assigned to "${users.find((u) => String(u.user_id) === assignedUserFilter)?.name ?? assignedUserFilter}"`}
+          {' — '}
+          <button onClick={() => setSearchParams({})} className="text-slate-800 underline">
+            Clear filter
+          </button>
+        </p>
+      )}
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
@@ -212,13 +243,29 @@ function Devices() {
             {devices.map((device) => (
               <tr key={device.device_id} className="border-t border-slate-100">
                 <td className="px-4 py-2">{device.device_id}</td>
-                <td className="px-4 py-2">{device.device_name}</td>
+                <td className="px-4 py-2">
+                  <Link to={`/devices/${device.device_id}`} className="text-slate-700 hover:underline">
+                    {device.device_name}
+                  </Link>
+                </td>
                 <td className="px-4 py-2">{device.device_type}</td>
                 <td className="px-4 py-2">{device.serial_number}</td>
                 <td className="px-4 py-2">{device.ip_address}</td>
                 <td className="px-4 py-2">{device.status}</td>
-                <td className="px-4 py-2">{device.branch_name}</td>
-                <td className="px-4 py-2">{device.assigned_user_name ?? '—'}</td>
+                <td className="px-4 py-2">
+                  <Link to={`/branches/${device.branch_id}`} className="text-slate-700 hover:underline">
+                    {device.branch_name}
+                  </Link>
+                </td>
+                <td className="px-4 py-2">
+                  {device.assigned_user_id ? (
+                    <Link to={`/users/${device.assigned_user_id}`} className="text-slate-700 hover:underline">
+                      {device.assigned_user_name}
+                    </Link>
+                  ) : (
+                    '—'
+                  )}
+                </td>
                 <td className="px-4 py-2 text-right space-x-3">
                   <button
                     onClick={() => handleEdit(device)}

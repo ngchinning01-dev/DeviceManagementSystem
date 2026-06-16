@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 
 from app.extensions import db
 from app.models import Branch, Device, User
+from app.utils.excel_import import build_import_response, normalize_str, read_excel_rows
 
 # CRUD API for devices (/api/devices).
 devices_bp = Blueprint('devices', __name__, url_prefix='/api/devices')
@@ -19,6 +20,10 @@ def list_devices():
     status = request.args.get('status')
     if status:
         query = query.filter_by(status=status)
+
+    assigned_user_id = request.args.get('assigned_user_id', type=int)
+    if assigned_user_id is not None:
+        query = query.filter_by(assigned_user_id=assigned_user_id)
 
     devices = query.order_by(Device.device_id).all()
     return jsonify([d.to_dict() for d in devices])
@@ -94,3 +99,63 @@ def delete_device(device_id):
     db.session.delete(device)
     db.session.commit()
     return '', 204
+
+
+# Bulk-create devices from an uploaded .xlsx file. Columns: Device Name, Device Type,
+# Serial Number, IP Address, Status, Branch Name, Assigned User Email. Branch Name and
+# Assigned User Email are resolved to IDs by case-insensitive lookup.
+@devices_bp.post('/import')
+def import_devices():
+    file = request.files.get('file')
+    if not file or not file.filename.lower().endswith('.xlsx'):
+        return jsonify({'error': 'an .xlsx file is required'}), 400
+
+    try:
+        rows = read_excel_rows(
+            file.stream, required_headers=['Device Name', 'Device Type', 'Branch Name']
+        )
+
+        branches_by_name = {b.branch_name.lower(): b.branch_id for b in Branch.query.all()}
+        users_by_email = {u.email.lower(): u.user_id for u in User.query.all()}
+
+        errors = []
+        imported = 0
+        for row_number, record in rows:
+            device_name = normalize_str(record.get('device name'))
+            device_type = normalize_str(record.get('device type'))
+            branch_name = normalize_str(record.get('branch name'))
+
+            if not device_name or not device_type or not branch_name:
+                errors.append((row_number, 'Device Name, Device Type, and Branch Name are required'))
+                continue
+
+            branch_id = branches_by_name.get(branch_name.lower())
+            if branch_id is None:
+                errors.append((row_number, f"branch '{branch_name}' not found"))
+                continue
+
+            assigned_user_id = None
+            assigned_user_email = normalize_str(record.get('assigned user email'))
+            if assigned_user_email:
+                assigned_user_id = users_by_email.get(assigned_user_email.lower())
+                if assigned_user_id is None:
+                    errors.append((row_number, f"assigned user email '{assigned_user_email}' not found"))
+                    continue
+
+            db.session.add(
+                Device(
+                    device_name=device_name,
+                    device_type=device_type,
+                    serial_number=normalize_str(record.get('serial number')),
+                    ip_address=normalize_str(record.get('ip address')),
+                    status=normalize_str(record.get('status')) or 'Active',
+                    branch_id=branch_id,
+                    assigned_user_id=assigned_user_id,
+                )
+            )
+            imported += 1
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 400
+
+    db.session.commit()
+    return jsonify(build_import_response(imported, errors))

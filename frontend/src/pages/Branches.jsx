@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import apiClient from '../api/client'
+import ExcelImport from '../components/ExcelImport'
 
 const emptyForm = { branch_name: '', location: '' }
 
@@ -61,7 +63,10 @@ function Branches() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-slate-800 mb-4">Branches</h2>
+      <div className="flex justify-between items-start mb-4">
+        <h2 className="text-xl font-semibold text-slate-800">Branches</h2>
+        <ExcelImport importUrl="/branches/import" onImported={loadBranches} />
+      </div>
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
@@ -118,7 +123,11 @@ function Branches() {
             {branches.map((branch) => (
               <tr key={branch.branch_id} className="border-t border-slate-100">
                 <td className="px-4 py-2">{branch.branch_id}</td>
-                <td className="px-4 py-2">{branch.branch_name}</td>
+                <td className="px-4 py-2">
+                  <Link to={`/branches/${branch.branch_id}`} className="text-slate-700 hover:underline">
+                    {branch.branch_name}
+                  </Link>
+                </td>
                 <td className="px-4 py-2">{branch.location}</td>
                 <td className="px-4 py-2 text-right space-x-3">
                   <button

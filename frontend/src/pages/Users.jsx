@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import apiClient from '../api/client'
+import ExcelImport from '../components/ExcelImport'
 
 const emptyForm = { name: '', email: '', department: '' }
 
@@ -61,7 +63,10 @@ function Users() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-slate-800 mb-4">Users</h2>
+      <div className="flex justify-between items-start mb-4">
+        <h2 className="text-xl font-semibold text-slate-800">Users</h2>
+        <ExcelImport importUrl="/users/import" onImported={loadUsers} />
+      </div>
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
@@ -128,7 +133,11 @@ function Users() {
             {users.map((user) => (
               <tr key={user.user_id} className="border-t border-slate-100">
                 <td className="px-4 py-2">{user.user_id}</td>
-                <td className="px-4 py-2">{user.name}</td>
+                <td className="px-4 py-2">
+                  <Link to={`/users/${user.user_id}`} className="text-slate-700 hover:underline">
+                    {user.name}
+                  </Link>
+                </td>
                 <td className="px-4 py-2">{user.email}</td>
                 <td className="px-4 py-2">{user.department}</td>
                 <td className="px-4 py-2 text-right space-x-3">

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import apiClient from '../api/client'
+import ExcelImport from '../components/ExcelImport'
 
 const emptyForm = { device_id: '', issue: '', solution: '', date: '' }
 
@@ -10,11 +12,20 @@ function Maintenance() {
   const [devices, setDevices] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [error, setError] = useState(null)
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  // Fetch the maintenance record list from the API.
+  const deviceFilter = searchParams.get('device_id')
+  const openFilter = searchParams.get('open')
+
+  // Fetch the maintenance record list from the API, applying any active filters.
   const loadRecords = () => {
     apiClient
-      .get('/maintenance')
+      .get('/maintenance', {
+        params: {
+          device_id: deviceFilter || undefined,
+          open: openFilter || undefined,
+        },
+      })
       .then((res) => setRecords(res.data))
       .catch((err) => setError(err.message))
   }
@@ -23,7 +34,14 @@ function Maintenance() {
   useEffect(() => {
     loadRecords()
     apiClient.get('/devices').then((res) => setDevices(res.data)).catch(() => {})
-  }, [])
+  }, [deviceFilter, openFilter])
+
+  // Pre-fill the form's device dropdown when a device_id filter is present.
+  useEffect(() => {
+    if (deviceFilter) {
+      setForm((f) => ({ ...f, device_id: deviceFilter }))
+    }
+  }, [deviceFilter])
 
   // Create a new maintenance record for the selected device.
   const handleSubmit = (e) => {
@@ -47,7 +65,23 @@ function Maintenance() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-slate-800 mb-4">Maintenance</h2>
+      <div className="flex justify-between items-start mb-4">
+        <h2 className="text-xl font-semibold text-slate-800">Maintenance</h2>
+        <ExcelImport importUrl="/maintenance/import" onImported={loadRecords} />
+      </div>
+
+      {(deviceFilter || openFilter) && (
+        <p className="text-sm text-slate-600 mb-4 bg-slate-100 rounded px-3 py-2">
+          Showing
+          {openFilter && ' open'} maintenance records
+          {deviceFilter &&
+            ` for "${devices.find((d) => String(d.device_id) === deviceFilter)?.device_name ?? deviceFilter}"`}
+          {' — '}
+          <button onClick={() => setSearchParams({})} className="text-slate-800 underline">
+            Clear filter
+          </button>
+        </p>
+      )}
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
@@ -122,7 +156,11 @@ function Maintenance() {
             {records.map((record) => (
               <tr key={record.maintenance_id} className="border-t border-slate-100">
                 <td className="px-4 py-2">{record.maintenance_id}</td>
-                <td className="px-4 py-2">{record.device_name}</td>
+                <td className="px-4 py-2">
+                  <Link to={`/devices/${record.device_id}`} className="text-slate-700 hover:underline">
+                    {record.device_name}
+                  </Link>
+                </td>
                 <td className="px-4 py-2">{record.issue}</td>
                 <td className="px-4 py-2">{record.solution}</td>
                 <td className="px-4 py-2">{record.date}</td>
