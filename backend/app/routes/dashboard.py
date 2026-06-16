@@ -25,9 +25,9 @@ def summary():
     )
 
     devices_by_branch = [
-        {'branch_name': branch_name, 'device_count': device_count}
-        for branch_name, device_count in (
-            db.session.query(Branch.branch_name, db.func.count(Device.device_id))
+        {'branch_id': branch_id, 'branch_name': branch_name, 'device_count': device_count}
+        for branch_id, branch_name, device_count in (
+            db.session.query(Branch.branch_id, Branch.branch_name, db.func.count(Device.device_id))
             .outerjoin(Device, Device.branch_id == Branch.branch_id)
             .group_by(Branch.branch_id)
             .all()
