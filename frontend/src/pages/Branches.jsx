@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import apiClient from '../api/client'
-import ExcelImport from '../components/ExcelImport'
+import ActionsMenu from '../components/ActionsMenu'
+import Modal from '../components/Modal'
 
 const emptyForm = { branch_name: '', location: '' }
 
-// Branches page: lists branches and provides a form to create, edit, and delete them.
+// Branches page: lists branches with clickable names and provides add/edit/delete via
+// a modal form opened from the ☰ actions menu or the Edit button in the table.
 function Branches() {
   const [branches, setBranches] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
+  const [modalOpen, setModalOpen] = useState(false)
   const [error, setError] = useState(null)
 
-  // Fetch the branch list from the API.
   const loadBranches = () => {
     apiClient
       .get('/branches')
@@ -22,35 +24,34 @@ function Branches() {
 
   useEffect(loadBranches, [])
 
-  // Create a new branch, or save changes if editing an existing one.
   const handleSubmit = (e) => {
     e.preventDefault()
-    const request = editingId
+    const req = editingId
       ? apiClient.put(`/branches/${editingId}`, form)
       : apiClient.post('/branches', form)
 
-    request
+    req
       .then(() => {
         setForm(emptyForm)
         setEditingId(null)
+        setModalOpen(false)
         loadBranches()
       })
       .catch((err) => setError(err.message))
   }
 
-  // Populate the form with an existing branch's data for editing.
   const handleEdit = (branch) => {
     setEditingId(branch.branch_id)
     setForm({ branch_name: branch.branch_name, location: branch.location ?? '' })
+    setModalOpen(true)
   }
 
-  // Exit edit mode and reset the form.
   const handleCancel = () => {
     setEditingId(null)
     setForm(emptyForm)
+    setModalOpen(false)
   }
 
-  // Delete a branch and refresh the list.
   const handleDelete = (id) => {
     apiClient
       .delete(`/branches/${id}`)
@@ -63,51 +64,60 @@ function Branches() {
 
   return (
     <div>
-      <div className="flex justify-between items-start mb-4">
+      <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-slate-800">Branches</h2>
-        <ExcelImport importUrl="/branches/import" onImported={loadBranches} />
+        <ActionsMenu
+          onAddNew={() => { setForm(emptyForm); setEditingId(null); setModalOpen(true) }}
+          importUrl="/branches/import"
+          onImported={loadBranches}
+          exportUrl="/branches/export"
+          exportFilename="branches.xlsx"
+        />
       </div>
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
-      <form
-        onSubmit={handleSubmit}
-        className="mb-6 flex flex-wrap gap-2 items-end bg-white p-4 rounded-lg shadow-sm"
+      <Modal
+        isOpen={modalOpen}
+        onClose={handleCancel}
+        title={editingId ? 'Edit Branch' : 'Add Branch'}
       >
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Branch Name</label>
-          <input
-            required
-            value={form.branch_name}
-            onChange={(e) => setForm({ ...form, branch_name: e.target.value })}
-            className="border border-slate-300 rounded px-2 py-1 text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Location</label>
-          <input
-            required
-            value={form.location}
-            onChange={(e) => setForm({ ...form, location: e.target.value })}
-            className="border border-slate-300 rounded px-2 py-1 text-sm"
-          />
-        </div>
-        <button
-          type="submit"
-          className="bg-slate-800 text-white text-sm rounded px-4 py-1.5 hover:bg-slate-700"
-        >
-          {editingId ? 'Save Changes' : 'Add Branch'}
-        </button>
-        {editingId && (
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="bg-slate-200 text-slate-700 text-sm rounded px-4 py-1.5 hover:bg-slate-300"
-          >
-            Cancel
-          </button>
-        )}
-      </form>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Branch Name</label>
+            <input
+              required
+              value={form.branch_name}
+              onChange={(e) => setForm({ ...form, branch_name: e.target.value })}
+              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Location</label>
+            <input
+              required
+              value={form.location}
+              onChange={(e) => setForm({ ...form, location: e.target.value })}
+              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
+            />
+          </div>
+          <div className="flex gap-2 mt-1">
+            <button
+              type="submit"
+              className="bg-slate-800 text-white text-sm rounded px-4 py-1.5 hover:bg-slate-700"
+            >
+              {editingId ? 'Save Changes' : 'Add Branch'}
+            </button>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="bg-slate-200 text-slate-700 text-sm rounded px-4 py-1.5 hover:bg-slate-300"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <table className="w-full text-sm text-left">

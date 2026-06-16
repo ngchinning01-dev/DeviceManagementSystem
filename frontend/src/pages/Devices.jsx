@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import apiClient from '../api/client'
-import ExcelImport from '../components/ExcelImport'
+import ActionsMenu from '../components/ActionsMenu'
+import Modal from '../components/Modal'
 
 const emptyForm = {
   device_name: '',
@@ -13,14 +14,15 @@ const emptyForm = {
   assigned_user_id: '',
 }
 
-// Devices page: lists devices and provides a form to create, edit, and delete them,
-// including assigning a branch and (optionally) a user to each device.
+// Devices page: lists devices and provides add/edit/delete via a modal form opened
+// from the ☰ actions menu or the Edit button. Supports URL-based filtering.
 function Devices() {
   const [devices, setDevices] = useState([])
   const [branches, setBranches] = useState([])
   const [users, setUsers] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
+  const [modalOpen, setModalOpen] = useState(false)
   const [error, setError] = useState(null)
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -28,7 +30,6 @@ function Devices() {
   const statusFilter = searchParams.get('status')
   const assignedUserFilter = searchParams.get('assigned_user_id')
 
-  // Fetch the device list from the API, applying any active filters.
   const loadDevices = () => {
     apiClient
       .get('/devices', {
@@ -42,14 +43,12 @@ function Devices() {
       .catch((err) => setError(err.message))
   }
 
-  // Load devices plus the branches/users needed to populate the form dropdowns.
   useEffect(() => {
     loadDevices()
     apiClient.get('/branches').then((res) => setBranches(res.data)).catch(() => {})
     apiClient.get('/users').then((res) => setUsers(res.data)).catch(() => {})
   }, [branchFilter, statusFilter, assignedUserFilter])
 
-  // Create a new device, or save changes if editing an existing one.
   const handleSubmit = (e) => {
     e.preventDefault()
     const payload = {
@@ -57,20 +56,20 @@ function Devices() {
       branch_id: Number(form.branch_id) || null,
       assigned_user_id: Number(form.assigned_user_id) || null,
     }
-    const request = editingId
+    const req = editingId
       ? apiClient.put(`/devices/${editingId}`, payload)
       : apiClient.post('/devices', payload)
 
-    request
+    req
       .then(() => {
         setForm(emptyForm)
         setEditingId(null)
+        setModalOpen(false)
         loadDevices()
       })
       .catch((err) => setError(err.message))
   }
 
-  // Populate the form with an existing device's data for editing.
   const handleEdit = (device) => {
     setEditingId(device.device_id)
     setForm({
@@ -82,15 +81,15 @@ function Devices() {
       branch_id: device.branch_id ?? '',
       assigned_user_id: device.assigned_user_id ?? '',
     })
+    setModalOpen(true)
   }
 
-  // Exit edit mode and reset the form.
   const handleCancel = () => {
     setEditingId(null)
     setForm(emptyForm)
+    setModalOpen(false)
   }
 
-  // Delete a device and refresh the list.
   const handleDelete = (id) => {
     apiClient
       .delete(`/devices/${id}`)
@@ -103,9 +102,15 @@ function Devices() {
 
   return (
     <div>
-      <div className="flex justify-between items-start mb-4">
+      <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-slate-800">Devices</h2>
-        <ExcelImport importUrl="/devices/import" onImported={loadDevices} />
+        <ActionsMenu
+          onAddNew={() => { setForm(emptyForm); setEditingId(null); setModalOpen(true) }}
+          importUrl="/devices/import"
+          onImported={loadDevices}
+          exportUrl="/devices/export"
+          exportFilename="devices.xlsx"
+        />
       </div>
 
       {(branchFilter || statusFilter || assignedUserFilter) && (
@@ -125,104 +130,109 @@ function Devices() {
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
-      <form
-        onSubmit={handleSubmit}
-        className="mb-6 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 items-end bg-white p-4 rounded-lg shadow-sm"
+      <Modal
+        isOpen={modalOpen}
+        onClose={handleCancel}
+        title={editingId ? 'Edit Device' : 'Add Device'}
       >
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Name</label>
-          <input
-            required
-            value={form.device_name}
-            onChange={(e) => setForm({ ...form, device_name: e.target.value })}
-            className="border border-slate-300 rounded px-2 py-1 text-sm w-full"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Type</label>
-          <input
-            required
-            value={form.device_type}
-            onChange={(e) => setForm({ ...form, device_type: e.target.value })}
-            className="border border-slate-300 rounded px-2 py-1 text-sm w-full"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Serial Number</label>
-          <input
-            value={form.serial_number}
-            onChange={(e) => setForm({ ...form, serial_number: e.target.value })}
-            className="border border-slate-300 rounded px-2 py-1 text-sm w-full"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">IP Address</label>
-          <input
-            value={form.ip_address}
-            onChange={(e) => setForm({ ...form, ip_address: e.target.value })}
-            className="border border-slate-300 rounded px-2 py-1 text-sm w-full"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Status</label>
-          <select
-            value={form.status}
-            onChange={(e) => setForm({ ...form, status: e.target.value })}
-            className="border border-slate-300 rounded px-2 py-1 text-sm w-full"
-          >
-            <option>Active</option>
-            <option>Inactive</option>
-            <option>Under Repair</option>
-            <option>Retired</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Branch</label>
-          <select
-            required
-            value={form.branch_id}
-            onChange={(e) => setForm({ ...form, branch_id: e.target.value })}
-            className="border border-slate-300 rounded px-2 py-1 text-sm w-full"
-          >
-            <option value="">Select branch</option>
-            {branches.map((b) => (
-              <option key={b.branch_id} value={b.branch_id}>
-                {b.branch_name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Assigned User</label>
-          <select
-            value={form.assigned_user_id}
-            onChange={(e) => setForm({ ...form, assigned_user_id: e.target.value })}
-            className="border border-slate-300 rounded px-2 py-1 text-sm w-full"
-          >
-            <option value="">Unassigned</option>
-            {users.map((u) => (
-              <option key={u.user_id} value={u.user_id}>
-                {u.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button
-          type="submit"
-          className="col-span-2 sm:col-span-4 lg:col-span-1 bg-slate-800 text-white text-sm rounded px-4 py-1.5 hover:bg-slate-700"
-        >
-          {editingId ? 'Save Changes' : 'Add Device'}
-        </button>
-        {editingId && (
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="col-span-2 sm:col-span-4 lg:col-span-1 bg-slate-200 text-slate-700 text-sm rounded px-4 py-1.5 hover:bg-slate-300"
-          >
-            Cancel
-          </button>
-        )}
-      </form>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Name</label>
+              <input
+                required
+                value={form.device_name}
+                onChange={(e) => setForm({ ...form, device_name: e.target.value })}
+                className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Type</label>
+              <input
+                required
+                value={form.device_type}
+                onChange={(e) => setForm({ ...form, device_type: e.target.value })}
+                className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Serial Number</label>
+              <input
+                value={form.serial_number}
+                onChange={(e) => setForm({ ...form, serial_number: e.target.value })}
+                className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">IP Address</label>
+              <input
+                value={form.ip_address}
+                onChange={(e) => setForm({ ...form, ip_address: e.target.value })}
+                className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Status</label>
+              <select
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value })}
+                className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
+              >
+                <option>Active</option>
+                <option>Inactive</option>
+                <option>Under Repair</option>
+                <option>Retired</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Branch</label>
+              <select
+                required
+                value={form.branch_id}
+                onChange={(e) => setForm({ ...form, branch_id: e.target.value })}
+                className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
+              >
+                <option value="">Select branch</option>
+                {branches.map((b) => (
+                  <option key={b.branch_id} value={b.branch_id}>
+                    {b.branch_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Assigned User</label>
+            <select
+              value={form.assigned_user_id}
+              onChange={(e) => setForm({ ...form, assigned_user_id: e.target.value })}
+              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
+            >
+              <option value="">Unassigned</option>
+              {users.map((u) => (
+                <option key={u.user_id} value={u.user_id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex gap-2 mt-1">
+            <button
+              type="submit"
+              className="bg-slate-800 text-white text-sm rounded px-4 py-1.5 hover:bg-slate-700"
+            >
+              {editingId ? 'Save Changes' : 'Add Device'}
+            </button>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="bg-slate-200 text-slate-700 text-sm rounded px-4 py-1.5 hover:bg-slate-300"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
         <table className="w-full text-sm text-left">

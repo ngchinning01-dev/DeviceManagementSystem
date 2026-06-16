@@ -1,4 +1,7 @@
-from flask import Blueprint, jsonify, request
+import io
+
+import openpyxl
+from flask import Blueprint, jsonify, request, send_file
 
 from app.extensions import db
 from app.models import User
@@ -100,3 +103,23 @@ def import_users():
 
     db.session.commit()
     return jsonify(build_import_response(imported, errors))
+
+
+# Export all users as a downloadable .xlsx file.
+@users_bp.get('/export')
+def export_users():
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Users'
+    ws.append(['User ID', 'Name', 'Email', 'Department'])
+    for u in User.query.order_by(User.user_id).all():
+        ws.append([u.user_id, u.name, u.email, u.department])
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return send_file(
+        buf,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name='users.xlsx',
+    )

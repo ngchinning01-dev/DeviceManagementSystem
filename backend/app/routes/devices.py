@@ -1,4 +1,7 @@
-from flask import Blueprint, jsonify, request
+import io
+
+import openpyxl
+from flask import Blueprint, jsonify, request, send_file
 
 from app.extensions import db
 from app.models import Branch, Device, User
@@ -159,3 +162,28 @@ def import_devices():
 
     db.session.commit()
     return jsonify(build_import_response(imported, errors))
+
+
+# Export all devices as a downloadable .xlsx file (human-readable branch/user names).
+@devices_bp.get('/export')
+def export_devices():
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Devices'
+    ws.append(['Device ID', 'Device Name', 'Device Type', 'Serial Number', 'IP Address',
+               'Status', 'Branch Name', 'Assigned User Email'])
+    for d in Device.query.order_by(Device.device_id).all():
+        info = d.to_dict()
+        ws.append([
+            d.device_id, d.device_name, d.device_type, d.serial_number, d.ip_address,
+            d.status, info['branch_name'], info.get('assigned_user_name'),
+        ])
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return send_file(
+        buf,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name='devices.xlsx',
+    )

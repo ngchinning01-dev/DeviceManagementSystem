@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import apiClient from '../api/client'
-import ExcelImport from '../components/ExcelImport'
+import ActionsMenu from '../components/ActionsMenu'
+import Modal from '../components/Modal'
 
 const emptyForm = { name: '', email: '', department: '' }
 
-// Users page: lists users and provides a form to create, edit, and delete them.
+// Users page: lists users with clickable names and provides add/edit/delete via
+// a modal form opened from the ☰ actions menu or the Edit button in the table.
 function Users() {
   const [users, setUsers] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
+  const [modalOpen, setModalOpen] = useState(false)
   const [error, setError] = useState(null)
 
-  // Fetch the user list from the API.
   const loadUsers = () => {
     apiClient
       .get('/users')
@@ -22,35 +24,34 @@ function Users() {
 
   useEffect(loadUsers, [])
 
-  // Create a new user, or save changes if editing an existing one.
   const handleSubmit = (e) => {
     e.preventDefault()
-    const request = editingId
+    const req = editingId
       ? apiClient.put(`/users/${editingId}`, form)
       : apiClient.post('/users', form)
 
-    request
+    req
       .then(() => {
         setForm(emptyForm)
         setEditingId(null)
+        setModalOpen(false)
         loadUsers()
       })
       .catch((err) => setError(err.message))
   }
 
-  // Populate the form with an existing user's data for editing.
   const handleEdit = (user) => {
     setEditingId(user.user_id)
     setForm({ name: user.name, email: user.email, department: user.department ?? '' })
+    setModalOpen(true)
   }
 
-  // Exit edit mode and reset the form.
   const handleCancel = () => {
     setEditingId(null)
     setForm(emptyForm)
+    setModalOpen(false)
   }
 
-  // Delete a user and refresh the list.
   const handleDelete = (id) => {
     apiClient
       .delete(`/users/${id}`)
@@ -63,60 +64,69 @@ function Users() {
 
   return (
     <div>
-      <div className="flex justify-between items-start mb-4">
+      <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-slate-800">Users</h2>
-        <ExcelImport importUrl="/users/import" onImported={loadUsers} />
+        <ActionsMenu
+          onAddNew={() => { setForm(emptyForm); setEditingId(null); setModalOpen(true) }}
+          importUrl="/users/import"
+          onImported={loadUsers}
+          exportUrl="/users/export"
+          exportFilename="users.xlsx"
+        />
       </div>
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
-      <form
-        onSubmit={handleSubmit}
-        className="mb-6 flex flex-wrap gap-2 items-end bg-white p-4 rounded-lg shadow-sm"
+      <Modal
+        isOpen={modalOpen}
+        onClose={handleCancel}
+        title={editingId ? 'Edit User' : 'Add User'}
       >
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Name</label>
-          <input
-            required
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="border border-slate-300 rounded px-2 py-1 text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Email</label>
-          <input
-            type="email"
-            required
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="border border-slate-300 rounded px-2 py-1 text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Department</label>
-          <input
-            value={form.department}
-            onChange={(e) => setForm({ ...form, department: e.target.value })}
-            className="border border-slate-300 rounded px-2 py-1 text-sm"
-          />
-        </div>
-        <button
-          type="submit"
-          className="bg-slate-800 text-white text-sm rounded px-4 py-1.5 hover:bg-slate-700"
-        >
-          {editingId ? 'Save Changes' : 'Add User'}
-        </button>
-        {editingId && (
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="bg-slate-200 text-slate-700 text-sm rounded px-4 py-1.5 hover:bg-slate-300"
-          >
-            Cancel
-          </button>
-        )}
-      </form>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Name</label>
+            <input
+              required
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Email</label>
+            <input
+              type="email"
+              required
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Department</label>
+            <input
+              value={form.department}
+              onChange={(e) => setForm({ ...form, department: e.target.value })}
+              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
+            />
+          </div>
+          <div className="flex gap-2 mt-1">
+            <button
+              type="submit"
+              className="bg-slate-800 text-white text-sm rounded px-4 py-1.5 hover:bg-slate-700"
+            >
+              {editingId ? 'Save Changes' : 'Add User'}
+            </button>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="bg-slate-200 text-slate-700 text-sm rounded px-4 py-1.5 hover:bg-slate-300"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <table className="w-full text-sm text-left">

@@ -1,4 +1,7 @@
-from flask import Blueprint, jsonify, request
+import io
+
+import openpyxl
+from flask import Blueprint, jsonify, request, send_file
 
 from app.extensions import db
 from app.models import Device, Maintenance
@@ -162,3 +165,28 @@ def import_maintenance():
 
     db.session.commit()
     return jsonify(build_import_response(imported, errors))
+
+
+# Export all maintenance records as a downloadable .xlsx file.
+@maintenance_bp.get('/export')
+def export_maintenance():
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Maintenance'
+    ws.append(['ID', 'Device Name', 'Device Serial Number', 'Issue', 'Solution', 'Date'])
+    for m in Maintenance.query.order_by(Maintenance.date.desc()).all():
+        info = m.to_dict()
+        device = db.session.get(Device, m.device_id)
+        ws.append([
+            m.maintenance_id, info['device_name'], device.serial_number if device else None,
+            m.issue, m.solution, str(m.date) if m.date else None,
+        ])
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return send_file(
+        buf,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name='maintenance.xlsx',
+    )

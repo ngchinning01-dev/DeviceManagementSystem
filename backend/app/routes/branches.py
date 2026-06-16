@@ -1,4 +1,7 @@
-from flask import Blueprint, jsonify, request
+import io
+
+import openpyxl
+from flask import Blueprint, jsonify, request, send_file
 
 from app.extensions import db
 from app.models import Branch
@@ -81,3 +84,23 @@ def import_branches():
 
     db.session.commit()
     return jsonify(build_import_response(imported, errors))
+
+
+# Export all branches as a downloadable .xlsx file.
+@branches_bp.get('/export')
+def export_branches():
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Branches'
+    ws.append(['Branch ID', 'Branch Name', 'Location'])
+    for b in Branch.query.order_by(Branch.branch_id).all():
+        ws.append([b.branch_id, b.branch_name, b.location])
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return send_file(
+        buf,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name='branches.xlsx',
+    )
