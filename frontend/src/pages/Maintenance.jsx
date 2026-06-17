@@ -7,13 +7,15 @@ import Modal from '../components/Modal'
 const emptyForm = { device_id: '', issue: '', solution: '', date: '' }
 
 // Maintenance page: lists maintenance records and provides add/delete via a modal
-// form. Supports URL-based filtering by device and open/unresolved status.
+// form. Supports URL-based filtering by device and open/unresolved status, plus
+// a real-time text search that stacks on top of any active URL filters.
 function Maintenance() {
   const [records, setRecords] = useState([])
   const [devices, setDevices] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [modalOpen, setModalOpen] = useState(false)
   const [error, setError] = useState(null)
+  const [search, setSearch] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
 
   const deviceFilter = searchParams.get('device_id')
@@ -67,6 +69,15 @@ function Maintenance() {
       .catch((err) => setError(err.message))
   }
 
+  const q = search.toLowerCase().trim()
+  const filtered = records.filter(
+    (r) =>
+      !q ||
+      (r.device_name ?? '').toLowerCase().includes(q) ||
+      r.issue.toLowerCase().includes(q) ||
+      (r.solution ?? '').toLowerCase().includes(q)
+  )
+
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
@@ -82,6 +93,14 @@ function Maintenance() {
           exportFilename="maintenance.xlsx"
         />
       </div>
+
+      <input
+        type="search"
+        placeholder="Search maintenance records..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="mb-4 border border-slate-300 rounded px-3 py-1.5 text-sm w-full max-w-sm bg-white"
+      />
 
       {(deviceFilter || openFilter) && (
         <p className="text-sm text-slate-600 mb-4 bg-slate-100 rounded px-3 py-2">
@@ -174,7 +193,7 @@ function Maintenance() {
             </tr>
           </thead>
           <tbody>
-            {records.map((record) => (
+            {filtered.map((record) => (
               <tr key={record.maintenance_id} className="border-t border-slate-100">
                 <td className="px-4 py-2">{record.maintenance_id}</td>
                 <td className="px-4 py-2">
@@ -195,10 +214,10 @@ function Maintenance() {
                 </td>
               </tr>
             ))}
-            {records.length === 0 && (
+            {filtered.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
-                  No maintenance records yet.
+                  {search ? `No results for "${search}".` : 'No maintenance records yet.'}
                 </td>
               </tr>
             )}

@@ -14,6 +14,7 @@ function Branches() {
   const [editingId, setEditingId] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [error, setError] = useState(null)
+  const [search, setSearch] = useState('')
 
   const loadBranches = () => {
     apiClient
@@ -62,6 +63,11 @@ function Branches() {
       .catch((err) => setError(err.message))
   }
 
+  const q = search.toLowerCase().trim()
+  const filtered = branches.filter(
+    (b) => !q || b.branch_name.toLowerCase().includes(q) || (b.location ?? '').toLowerCase().includes(q)
+  )
+
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
@@ -74,6 +80,14 @@ function Branches() {
           exportFilename="branches.xlsx"
         />
       </div>
+
+      <input
+        type="search"
+        placeholder="Search branches..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="mb-4 border border-slate-300 rounded px-3 py-1.5 text-sm w-full max-w-sm bg-white"
+      />
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
@@ -130,7 +144,7 @@ function Branches() {
             </tr>
           </thead>
           <tbody>
-            {branches.map((branch) => (
+            {filtered.map((branch) => (
               <tr key={branch.branch_id} className="border-t border-slate-100">
                 <td className="px-4 py-2">{branch.branch_id}</td>
                 <td className="px-4 py-2">
@@ -155,10 +169,10 @@ function Branches() {
                 </td>
               </tr>
             ))}
-            {branches.length === 0 && (
+            {filtered.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
-                  No branches yet.
+                  {search ? `No results for "${search}".` : 'No branches yet.'}
                 </td>
               </tr>
             )}

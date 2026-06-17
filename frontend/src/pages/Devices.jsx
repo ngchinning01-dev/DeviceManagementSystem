@@ -15,7 +15,8 @@ const emptyForm = {
 }
 
 // Devices page: lists devices and provides add/edit/delete via a modal form opened
-// from the ☰ actions menu or the Edit button. Supports URL-based filtering.
+// from the ☰ actions menu or the Edit button. Supports URL-based filtering and
+// a real-time text search that stacks on top of any active URL filters.
 function Devices() {
   const [devices, setDevices] = useState([])
   const [branches, setBranches] = useState([])
@@ -24,6 +25,7 @@ function Devices() {
   const [editingId, setEditingId] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [error, setError] = useState(null)
+  const [search, setSearch] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
 
   const branchFilter = searchParams.get('branch_id')
@@ -100,6 +102,19 @@ function Devices() {
       .catch((err) => setError(err.message))
   }
 
+  const q = search.toLowerCase().trim()
+  const filtered = devices.filter(
+    (d) =>
+      !q ||
+      d.device_name.toLowerCase().includes(q) ||
+      d.device_type.toLowerCase().includes(q) ||
+      (d.serial_number ?? '').toLowerCase().includes(q) ||
+      (d.ip_address ?? '').toLowerCase().includes(q) ||
+      d.status.toLowerCase().includes(q) ||
+      (d.branch_name ?? '').toLowerCase().includes(q) ||
+      (d.assigned_user_name ?? '').toLowerCase().includes(q)
+  )
+
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
@@ -112,6 +127,14 @@ function Devices() {
           exportFilename="devices.xlsx"
         />
       </div>
+
+      <input
+        type="search"
+        placeholder="Search devices..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="mb-4 border border-slate-300 rounded px-3 py-1.5 text-sm w-full max-w-sm bg-white"
+      />
 
       {(branchFilter || statusFilter || assignedUserFilter) && (
         <p className="text-sm text-slate-600 mb-4 bg-slate-100 rounded px-3 py-2">
@@ -250,7 +273,7 @@ function Devices() {
             </tr>
           </thead>
           <tbody>
-            {devices.map((device) => (
+            {filtered.map((device) => (
               <tr key={device.device_id} className="border-t border-slate-100">
                 <td className="px-4 py-2">{device.device_id}</td>
                 <td className="px-4 py-2">
@@ -292,10 +315,10 @@ function Devices() {
                 </td>
               </tr>
             ))}
-            {devices.length === 0 && (
+            {filtered.length === 0 && (
               <tr>
                 <td colSpan={9} className="px-4 py-6 text-center text-slate-400">
-                  No devices yet.
+                  {search ? `No results for "${search}".` : 'No devices yet.'}
                 </td>
               </tr>
             )}
