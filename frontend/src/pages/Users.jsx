@@ -4,10 +4,8 @@ import apiClient from '../api/client'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
 
-const emptyForm = { name: '', email: '', department: '' }
+const emptyForm = { user_id: '', name: '', email: '', department: '' }
 
-// Users page: lists users with clickable names and provides add/edit/delete via
-// a modal form opened from the ☰ actions menu or the Edit button in the table.
 function Users() {
   const [users, setUsers] = useState([])
   const [form, setForm] = useState(emptyForm)
@@ -28,8 +26,13 @@ function Users() {
   const handleSubmit = (e) => {
     e.preventDefault()
     const req = editingId
-      ? apiClient.put(`/users/${editingId}`, form)
-      : apiClient.post('/users', form)
+      ? apiClient.put(`/users/${editingId}`, { name: form.name, email: form.email, department: form.department })
+      : apiClient.post('/users', {
+          user_id: form.user_id.trim() || undefined,
+          name: form.name,
+          email: form.email,
+          department: form.department,
+        })
 
     req
       .then(() => {
@@ -38,12 +41,12 @@ function Users() {
         setModalOpen(false)
         loadUsers()
       })
-      .catch((err) => setError(err.message))
+      .catch((err) => setError(err.response?.data?.error || err.message))
   }
 
   const handleEdit = (user) => {
     setEditingId(user.user_id)
-    setForm({ name: user.name, email: user.email, department: user.department ?? '' })
+    setForm({ user_id: user.user_id, name: user.name, email: user.email, department: user.department ?? '' })
     setModalOpen(true)
   }
 
@@ -60,7 +63,7 @@ function Users() {
         if (editingId === id) handleCancel()
         loadUsers()
       })
-      .catch((err) => setError(err.message))
+      .catch((err) => setError(err.response?.data?.error || err.message))
   }
 
   const q = search.toLowerCase().trim()
@@ -101,6 +104,23 @@ function Users() {
         title={editingId ? 'Edit User' : 'Add User'}
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">
+              ID{' '}
+              {editingId ? (
+                <span className="text-slate-400">(cannot be changed)</span>
+              ) : (
+                <span className="text-slate-400">(optional — auto-generated if blank)</span>
+              )}
+            </label>
+            <input
+              value={form.user_id}
+              onChange={(e) => setForm({ ...form, user_id: e.target.value })}
+              disabled={!!editingId}
+              placeholder={editingId ? '' : 'e.g. U001'}
+              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full disabled:bg-slate-50 disabled:text-slate-400"
+            />
+          </div>
           <div>
             <label className="block text-xs text-slate-500 mb-1">Name</label>
             <input
@@ -160,7 +180,7 @@ function Users() {
           <tbody>
             {filtered.map((user) => (
               <tr key={user.user_id} className="border-t border-slate-100">
-                <td className="px-4 py-2">{user.user_id}</td>
+                <td className="px-4 py-2 font-mono text-xs text-slate-500">{user.user_id}</td>
                 <td className="px-4 py-2">
                   <Link to={`/users/${user.user_id}`} className="text-slate-700 hover:underline">
                     {user.name}

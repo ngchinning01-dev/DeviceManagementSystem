@@ -4,11 +4,8 @@ import apiClient from '../api/client'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
 
-const emptyForm = { device_id: '', issue: '', solution: '', date: '' }
+const emptyForm = { maintenance_id: '', device_id: '', issue: '', solution: '', date: '' }
 
-// Maintenance page: lists maintenance records and provides add/delete via a modal
-// form. Supports URL-based filtering by device and open/unresolved status, plus
-// a real-time text search that stacks on top of any active URL filters.
 function Maintenance() {
   const [records, setRecords] = useState([])
   const [devices, setDevices] = useState([])
@@ -38,7 +35,6 @@ function Maintenance() {
     apiClient.get('/devices').then((res) => setDevices(res.data)).catch(() => {})
   }, [deviceFilter, openFilter])
 
-  // Pre-fill the device dropdown when arriving from a device detail link.
   useEffect(() => {
     if (deviceFilter) {
       setForm((f) => ({ ...f, device_id: deviceFilter }))
@@ -48,13 +44,19 @@ function Maintenance() {
   const handleSubmit = (e) => {
     e.preventDefault()
     apiClient
-      .post('/maintenance', { ...form, device_id: Number(form.device_id) || null })
+      .post('/maintenance', {
+        maintenance_id: form.maintenance_id.trim() || undefined,
+        device_id: form.device_id || null,
+        issue: form.issue,
+        solution: form.solution,
+        date: form.date,
+      })
       .then(() => {
         setForm(emptyForm)
         setModalOpen(false)
         loadRecords()
       })
-      .catch((err) => setError(err.message))
+      .catch((err) => setError(err.response?.data?.error || err.message))
   }
 
   const handleCancel = () => {
@@ -66,7 +68,7 @@ function Maintenance() {
     apiClient
       .delete(`/maintenance/${id}`)
       .then(loadRecords)
-      .catch((err) => setError(err.message))
+      .catch((err) => setError(err.response?.data?.error || err.message))
   }
 
   const q = search.toLowerCase().trim()
@@ -107,7 +109,7 @@ function Maintenance() {
           Showing
           {openFilter && ' open'} maintenance records
           {deviceFilter &&
-            ` for "${devices.find((d) => String(d.device_id) === deviceFilter)?.device_name ?? deviceFilter}"`}
+            ` for "${devices.find((d) => d.device_id === deviceFilter)?.device_name ?? deviceFilter}"`}
           {' — '}
           <button onClick={() => setSearchParams({})} className="text-slate-800 underline">
             Clear filter
@@ -119,6 +121,17 @@ function Maintenance() {
 
       <Modal isOpen={modalOpen} onClose={handleCancel} title="Log Maintenance Record">
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">
+              ID <span className="text-slate-400">(optional — auto-generated if blank)</span>
+            </label>
+            <input
+              value={form.maintenance_id}
+              onChange={(e) => setForm({ ...form, maintenance_id: e.target.value })}
+              placeholder="e.g. MR001"
+              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
+            />
+          </div>
           <div>
             <label className="block text-xs text-slate-500 mb-1">Device</label>
             <select
@@ -195,7 +208,7 @@ function Maintenance() {
           <tbody>
             {filtered.map((record) => (
               <tr key={record.maintenance_id} className="border-t border-slate-100">
-                <td className="px-4 py-2">{record.maintenance_id}</td>
+                <td className="px-4 py-2 font-mono text-xs text-slate-500">{record.maintenance_id}</td>
                 <td className="px-4 py-2">
                   <Link to={`/devices/${record.device_id}`} className="text-slate-700 hover:underline">
                     {record.device_name}

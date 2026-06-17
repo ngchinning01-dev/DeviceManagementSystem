@@ -4,10 +4,8 @@ import apiClient from '../api/client'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
 
-const emptyForm = { branch_name: '', location: '' }
+const emptyForm = { branch_id: '', branch_name: '', location: '' }
 
-// Branches page: lists branches with clickable names and provides add/edit/delete via
-// a modal form opened from the ☰ actions menu or the Edit button in the table.
 function Branches() {
   const [branches, setBranches] = useState([])
   const [form, setForm] = useState(emptyForm)
@@ -28,8 +26,12 @@ function Branches() {
   const handleSubmit = (e) => {
     e.preventDefault()
     const req = editingId
-      ? apiClient.put(`/branches/${editingId}`, form)
-      : apiClient.post('/branches', form)
+      ? apiClient.put(`/branches/${editingId}`, { branch_name: form.branch_name, location: form.location })
+      : apiClient.post('/branches', {
+          branch_id: form.branch_id.trim() || undefined,
+          branch_name: form.branch_name,
+          location: form.location,
+        })
 
     req
       .then(() => {
@@ -38,12 +40,12 @@ function Branches() {
         setModalOpen(false)
         loadBranches()
       })
-      .catch((err) => setError(err.message))
+      .catch((err) => setError(err.response?.data?.error || err.message))
   }
 
   const handleEdit = (branch) => {
     setEditingId(branch.branch_id)
-    setForm({ branch_name: branch.branch_name, location: branch.location ?? '' })
+    setForm({ branch_id: branch.branch_id, branch_name: branch.branch_name, location: branch.location ?? '' })
     setModalOpen(true)
   }
 
@@ -60,7 +62,7 @@ function Branches() {
         if (editingId === id) handleCancel()
         loadBranches()
       })
-      .catch((err) => setError(err.message))
+      .catch((err) => setError(err.response?.data?.error || err.message))
   }
 
   const q = search.toLowerCase().trim()
@@ -97,6 +99,23 @@ function Branches() {
         title={editingId ? 'Edit Branch' : 'Add Branch'}
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">
+              ID{' '}
+              {editingId ? (
+                <span className="text-slate-400">(cannot be changed)</span>
+              ) : (
+                <span className="text-slate-400">(optional — auto-generated if blank)</span>
+              )}
+            </label>
+            <input
+              value={form.branch_id}
+              onChange={(e) => setForm({ ...form, branch_id: e.target.value })}
+              disabled={!!editingId}
+              placeholder={editingId ? '' : 'e.g. BR1001'}
+              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full disabled:bg-slate-50 disabled:text-slate-400"
+            />
+          </div>
           <div>
             <label className="block text-xs text-slate-500 mb-1">Branch Name</label>
             <input
@@ -146,7 +165,7 @@ function Branches() {
           <tbody>
             {filtered.map((branch) => (
               <tr key={branch.branch_id} className="border-t border-slate-100">
-                <td className="px-4 py-2">{branch.branch_id}</td>
+                <td className="px-4 py-2 font-mono text-xs text-slate-500">{branch.branch_id}</td>
                 <td className="px-4 py-2">
                   <Link to={`/branches/${branch.branch_id}`} className="text-slate-700 hover:underline">
                     {branch.branch_name}

@@ -5,6 +5,7 @@ import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
 
 const emptyForm = {
+  device_id: '',
   device_name: '',
   device_type: '',
   serial_number: '',
@@ -14,9 +15,6 @@ const emptyForm = {
   assigned_user_id: '',
 }
 
-// Devices page: lists devices and provides add/edit/delete via a modal form opened
-// from the ☰ actions menu or the Edit button. Supports URL-based filtering and
-// a real-time text search that stacks on top of any active URL filters.
 function Devices() {
   const [devices, setDevices] = useState([])
   const [branches, setBranches] = useState([])
@@ -53,14 +51,26 @@ function Devices() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    const payload = {
-      ...form,
-      branch_id: Number(form.branch_id) || null,
-      assigned_user_id: Number(form.assigned_user_id) || null,
-    }
     const req = editingId
-      ? apiClient.put(`/devices/${editingId}`, payload)
-      : apiClient.post('/devices', payload)
+      ? apiClient.put(`/devices/${editingId}`, {
+          device_name: form.device_name,
+          device_type: form.device_type,
+          serial_number: form.serial_number,
+          ip_address: form.ip_address,
+          status: form.status,
+          branch_id: form.branch_id || null,
+          assigned_user_id: form.assigned_user_id || null,
+        })
+      : apiClient.post('/devices', {
+          device_id: form.device_id.trim() || undefined,
+          device_name: form.device_name,
+          device_type: form.device_type,
+          serial_number: form.serial_number,
+          ip_address: form.ip_address,
+          status: form.status,
+          branch_id: form.branch_id || null,
+          assigned_user_id: form.assigned_user_id || null,
+        })
 
     req
       .then(() => {
@@ -69,12 +79,13 @@ function Devices() {
         setModalOpen(false)
         loadDevices()
       })
-      .catch((err) => setError(err.message))
+      .catch((err) => setError(err.response?.data?.error || err.message))
   }
 
   const handleEdit = (device) => {
     setEditingId(device.device_id)
     setForm({
+      device_id: device.device_id,
       device_name: device.device_name,
       device_type: device.device_type,
       serial_number: device.serial_number ?? '',
@@ -99,7 +110,7 @@ function Devices() {
         if (editingId === id) handleCancel()
         loadDevices()
       })
-      .catch((err) => setError(err.message))
+      .catch((err) => setError(err.response?.data?.error || err.message))
   }
 
   const q = search.toLowerCase().trim()
@@ -140,10 +151,10 @@ function Devices() {
         <p className="text-sm text-slate-600 mb-4 bg-slate-100 rounded px-3 py-2">
           Showing devices
           {branchFilter &&
-            ` in branch "${branches.find((b) => String(b.branch_id) === branchFilter)?.branch_name ?? branchFilter}"`}
+            ` in branch "${branches.find((b) => b.branch_id === branchFilter)?.branch_name ?? branchFilter}"`}
           {statusFilter && ` with status "${statusFilter}"`}
           {assignedUserFilter &&
-            ` assigned to "${users.find((u) => String(u.user_id) === assignedUserFilter)?.name ?? assignedUserFilter}"`}
+            ` assigned to "${users.find((u) => u.user_id === assignedUserFilter)?.name ?? assignedUserFilter}"`}
           {' — '}
           <button onClick={() => setSearchParams({})} className="text-slate-800 underline">
             Clear filter
@@ -159,6 +170,23 @@ function Devices() {
         title={editingId ? 'Edit Device' : 'Add Device'}
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">
+              ID{' '}
+              {editingId ? (
+                <span className="text-slate-400">(cannot be changed)</span>
+              ) : (
+                <span className="text-slate-400">(optional — auto-generated if blank)</span>
+              )}
+            </label>
+            <input
+              value={form.device_id}
+              onChange={(e) => setForm({ ...form, device_id: e.target.value })}
+              disabled={!!editingId}
+              placeholder={editingId ? '' : 'e.g. DV001'}
+              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full disabled:bg-slate-50 disabled:text-slate-400"
+            />
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-slate-500 mb-1">Name</label>
@@ -275,7 +303,7 @@ function Devices() {
           <tbody>
             {filtered.map((device) => (
               <tr key={device.device_id} className="border-t border-slate-100">
-                <td className="px-4 py-2">{device.device_id}</td>
+                <td className="px-4 py-2 font-mono text-xs text-slate-500">{device.device_id}</td>
                 <td className="px-4 py-2">
                   <Link to={`/devices/${device.device_id}`} className="text-slate-700 hover:underline">
                     {device.device_name}

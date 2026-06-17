@@ -1,15 +1,12 @@
-# SQLAlchemy models for the device management database, plus to_dict() serializers
-# used to build JSON API responses.
 from datetime import date
 
 from app.extensions import db
 
 
-# A physical branch/site that devices belong to.
 class Branch(db.Model):
     __tablename__ = 'branches'
 
-    branch_id = db.Column(db.Integer, primary_key=True)
+    branch_id = db.Column(db.String(50), primary_key=True)
     branch_name = db.Column(db.String(120), nullable=False)
     location = db.Column(db.String(200))
 
@@ -23,11 +20,10 @@ class Branch(db.Model):
         }
 
 
-# A person that devices can be assigned to.
 class User(db.Model):
     __tablename__ = 'users'
 
-    user_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(50), primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     department = db.Column(db.String(120))
@@ -43,19 +39,18 @@ class User(db.Model):
         }
 
 
-# A managed device, linked to its branch, optional assigned user, and maintenance history.
 class Device(db.Model):
     __tablename__ = 'devices'
 
-    device_id = db.Column(db.Integer, primary_key=True)
+    device_id = db.Column(db.String(50), primary_key=True)
     device_name = db.Column(db.String(120), nullable=False)
     device_type = db.Column(db.String(80), nullable=False)
     serial_number = db.Column(db.String(120))
     ip_address = db.Column(db.String(45))
     status = db.Column(db.String(40), nullable=False, default='Active')
 
-    branch_id = db.Column(db.Integer, db.ForeignKey('branches.branch_id'), nullable=False)
-    assigned_user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=True)
+    branch_id = db.Column(db.String(50), db.ForeignKey('branches.branch_id'), nullable=False)
+    assigned_user_id = db.Column(db.String(50), db.ForeignKey('users.user_id'), nullable=True)
 
     branch = db.relationship('Branch', back_populates='devices')
     assigned_user = db.relationship('User', back_populates='devices')
@@ -78,12 +73,11 @@ class Device(db.Model):
         }
 
 
-# A maintenance/repair record logged against a device.
 class Maintenance(db.Model):
     __tablename__ = 'maintenance_records'
 
-    maintenance_id = db.Column(db.Integer, primary_key=True)
-    device_id = db.Column(db.Integer, db.ForeignKey('devices.device_id'), nullable=False)
+    maintenance_id = db.Column(db.String(50), primary_key=True)
+    device_id = db.Column(db.String(50), db.ForeignKey('devices.device_id'), nullable=False)
     issue = db.Column(db.String(255), nullable=False)
     solution = db.Column(db.String(255))
     date = db.Column(db.Date, nullable=False, default=date.today)

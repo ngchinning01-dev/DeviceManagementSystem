@@ -6,26 +6,42 @@ from flask import Blueprint, jsonify, request, send_file
 from app.extensions import db
 from app.models import User
 from app.utils.excel_import import build_import_response, normalize_str, read_excel_rows
+from app.utils.id_gen import next_id
 
-# CRUD API for users (/api/users).
 users_bp = Blueprint('users', __name__, url_prefix='/api/users')
 
 
-# List all users.
 @users_bp.get('')
 def list_users():
     users = User.query.order_by(User.user_id).all()
     return jsonify([u.to_dict() for u in users])
 
 
-# Get a single user by ID.
-@users_bp.get('/<int:user_id>')
+@users_bp.get('/export')
+def export_users():
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Users'
+    ws.append(['User ID', 'Name', 'Email', 'Department'])
+    for u in User.query.order_by(User.user_id).all():
+        ws.append([u.user_id, u.name, u.email, u.department])
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return send_file(
+        buf,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name='users.xlsx',
+    )
+
+
+@users_bp.get('/<user_id>')
 def get_user(user_id):
     user = db.get_or_404(User, user_id)
     return jsonify(user.to_dict())
 
 
-# Create a new user (email must be unique).
 @users_bp.post('')
 def create_user():
     data = request.get_json() or {}
@@ -35,14 +51,19 @@ def create_user():
     if User.query.filter_by(email=data['email']).first():
         return jsonify({'error': 'a user with this email already exists'}), 409
 
-    user = User(name=data['name'], email=data['email'], department=data.get('department'))
+    user_id = (data.get('user_id') or '').strip() or None
+    if user_id is None:
+        user_id = next_id([u.user_id for u in User.query.all()])
+    elif db.session.get(User, user_id):
+        return jsonify({'error': f"ID '{user_id}' already exists"}), 409
+
+    user = User(user_id=user_id, name=data['name'], email=data['email'], department=data.get('department'))
     db.session.add(user)
     db.session.commit()
     return jsonify(user.to_dict()), 201
 
 
-# Update an existing user's details.
-@users_bp.put('/<int:user_id>')
+@users_bp.put('/<user_id>')
 def update_user(user_id):
     user = db.get_or_404(User, user_id)
     data = request.get_json() or {}
@@ -54,8 +75,7 @@ def update_user(user_id):
     return jsonify(user.to_dict())
 
 
-# Delete a user.
-@users_bp.delete('/<int:user_id>')
+@users_bp.delete('/<user_id>')
 def delete_user(user_id):
     user = db.get_or_404(User, user_id)
     db.session.delete(user)
@@ -63,7 +83,6 @@ def delete_user(user_id):
     return '', 204
 
 
-# Bulk-create users from an uploaded .xlsx file (columns: Name, Email, Department).
 @users_bp.post('/import')
 def import_users():
     file = request.files.get('file')
@@ -73,6 +92,8 @@ def import_users():
     try:
         rows = read_excel_rows(file.stream, required_headers=['Name', 'Email'])
 
+        existing_ids = [u.user_id for u in User.query.all()]
+        seen_ids = set(existing_ids)
         existing_emails = {email.lower() for (email,) in db.session.query(User.email).all()}
         seen_emails = {}
         errors = []
@@ -95,7 +116,20 @@ def import_users():
                 )
                 continue
 
-            db.session.add(User(name=name, email=email, department=normalize_str(record.get('department'))))
+            user_id_col = normalize_str(record.get('user id'))
+            if user_id_col:
+                if user_id_col in seen_ids:
+                    errors.append((row_number, f"ID '{user_id_col}' already exists"))
+                    continue
+                user_id = user_id_col
+            else:
+                user_id = next_id(existing_ids)
+
+            seen_ids.add(user_id)
+            existing_ids.append(user_id)
+            db.session.add(
+                User(user_id=user_id, name=name, email=email, department=normalize_str(record.get('department')))
+            )
             seen_emails[email_key] = row_number
             imported += 1
     except ValueError as exc:
@@ -103,23 +137,3 @@ def import_users():
 
     db.session.commit()
     return jsonify(build_import_response(imported, errors))
-
-
-# Export all users as a downloadable .xlsx file.
-@users_bp.get('/export')
-def export_users():
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = 'Users'
-    ws.append(['User ID', 'Name', 'Email', 'Department'])
-    for u in User.query.order_by(User.user_id).all():
-        ws.append([u.user_id, u.name, u.email, u.department])
-    buf = io.BytesIO()
-    wb.save(buf)
-    buf.seek(0)
-    return send_file(
-        buf,
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        as_attachment=True,
-        download_name='users.xlsx',
-    )
