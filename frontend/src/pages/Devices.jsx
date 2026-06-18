@@ -252,7 +252,7 @@ function Devices() {
               >
                 <option>Active</option>
                 <option>Inactive</option>
-                <option>Under Repair</option>
+                <option>Under Maintenance</option>
                 <option>Retired</option>
               </select>
             </div>

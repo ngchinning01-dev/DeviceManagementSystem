@@ -44,3 +44,17 @@ def summary():
             'devices_by_branch': devices_by_branch,
         }
     )
+
+
+@dashboard_bp.get('/maintenance-trend')
+def maintenance_trend():
+    rows = (
+        db.session.query(
+            db.func.strftime('%Y-%m', Maintenance.date).label('month'),
+            db.func.count(Maintenance.maintenance_id).label('count'),
+        )
+        .group_by('month')
+        .order_by('month')
+        .all()
+    )
+    return jsonify([{'month': month, 'count': count} for month, count in rows])
