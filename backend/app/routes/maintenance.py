@@ -82,7 +82,7 @@ def create_maintenance():
         maintenance_id=maintenance_id,
         device_id=data['device_id'],
         issue=data['issue'],
-        solution=data.get('solution'),
+        solution=data.get('solution') or None,
         **({'date': record_date} if record_date else {}),
     )
     db.session.add(record)
@@ -95,9 +95,10 @@ def update_maintenance(maintenance_id):
     record = db.get_or_404(Maintenance, maintenance_id)
     data = request.get_json() or {}
 
-    for field in ('issue', 'solution'):
-        if field in data:
-            setattr(record, field, data[field])
+    if 'issue' in data:
+        record.issue = data['issue']
+    if 'solution' in data:
+        record.solution = data['solution'] or None
 
     if 'date' in data:
         try:

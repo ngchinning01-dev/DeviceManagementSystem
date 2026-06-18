@@ -13,6 +13,8 @@ function Maintenance() {
   const [modalOpen, setModalOpen] = useState(false)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
+  const [sortCol, setSortCol] = useState('date')
+  const [sortDir, setSortDir] = useState('desc')
   const [searchParams, setSearchParams] = useSearchParams()
 
   const deviceFilter = searchParams.get('device_id')
@@ -40,6 +42,11 @@ function Maintenance() {
       setForm((f) => ({ ...f, device_id: deviceFilter }))
     }
   }, [deviceFilter])
+
+  const toggleSort = (col) => {
+    if (sortCol === col) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    else { setSortCol(col); setSortDir('asc') }
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -78,6 +85,20 @@ function Maintenance() {
       (r.device_name ?? '').toLowerCase().includes(q) ||
       r.issue.toLowerCase().includes(q) ||
       (r.solution ?? '').toLowerCase().includes(q)
+  )
+
+  const sorted = [...filtered].sort((a, b) => {
+    const cmp = String(a[sortCol] ?? '').localeCompare(String(b[sortCol] ?? ''), undefined, { numeric: true, sensitivity: 'base' })
+    return sortDir === 'asc' ? cmp : -cmp
+  })
+
+  const Th = ({ col, children }) => (
+    <th
+      onClick={() => toggleSort(col)}
+      className="px-4 py-2 cursor-pointer select-none hover:text-slate-700"
+    >
+      {children} {sortCol === col ? (sortDir === 'asc' ? '↑' : '↓') : <span className="opacity-30">↕</span>}
+    </th>
   )
 
   return (
@@ -197,16 +218,16 @@ function Maintenance() {
         <table className="w-full text-sm text-left">
           <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
             <tr>
-              <th className="px-4 py-2">ID</th>
+              <Th col="maintenance_id">ID</Th>
               <th className="px-4 py-2">Device</th>
               <th className="px-4 py-2">Issue</th>
               <th className="px-4 py-2">Solution</th>
-              <th className="px-4 py-2">Date</th>
+              <Th col="date">Date</Th>
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((record) => (
+            {sorted.map((record) => (
               <tr key={record.maintenance_id} className="border-t border-slate-100">
                 <td className="px-4 py-2 font-mono text-xs text-slate-500">{record.maintenance_id}</td>
                 <td className="px-4 py-2">
@@ -227,7 +248,7 @@ function Maintenance() {
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && (
+            {sorted.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
                   {search ? `No results for "${search}".` : 'No maintenance records yet.'}

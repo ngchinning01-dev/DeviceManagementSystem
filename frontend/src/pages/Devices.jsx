@@ -24,6 +24,8 @@ function Devices() {
   const [modalOpen, setModalOpen] = useState(false)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
+  const [sortCol, setSortCol] = useState('device_id')
+  const [sortDir, setSortDir] = useState('asc')
   const [searchParams, setSearchParams] = useSearchParams()
 
   const branchFilter = searchParams.get('branch_id')
@@ -48,6 +50,11 @@ function Devices() {
     apiClient.get('/branches').then((res) => setBranches(res.data)).catch(() => {})
     apiClient.get('/users').then((res) => setUsers(res.data)).catch(() => {})
   }, [branchFilter, statusFilter, assignedUserFilter])
+
+  const toggleSort = (col) => {
+    if (sortCol === col) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    else { setSortCol(col); setSortDir('asc') }
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -124,6 +131,20 @@ function Devices() {
       d.status.toLowerCase().includes(q) ||
       (d.branch_name ?? '').toLowerCase().includes(q) ||
       (d.assigned_user_name ?? '').toLowerCase().includes(q)
+  )
+
+  const sorted = [...filtered].sort((a, b) => {
+    const cmp = String(a[sortCol] ?? '').localeCompare(String(b[sortCol] ?? ''), undefined, { numeric: true, sensitivity: 'base' })
+    return sortDir === 'asc' ? cmp : -cmp
+  })
+
+  const Th = ({ col, children }) => (
+    <th
+      onClick={() => toggleSort(col)}
+      className="px-4 py-2 cursor-pointer select-none hover:text-slate-700"
+    >
+      {children} {sortCol === col ? (sortDir === 'asc' ? '↑' : '↓') : <span className="opacity-30">↕</span>}
+    </th>
   )
 
   return (
@@ -289,19 +310,19 @@ function Devices() {
         <table className="w-full text-sm text-left">
           <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
             <tr>
-              <th className="px-4 py-2">ID</th>
-              <th className="px-4 py-2">Name</th>
+              <Th col="device_id">ID</Th>
+              <Th col="device_name">Name</Th>
               <th className="px-4 py-2">Type</th>
               <th className="px-4 py-2">Serial</th>
               <th className="px-4 py-2">IP</th>
-              <th className="px-4 py-2">Status</th>
+              <Th col="status">Status</Th>
               <th className="px-4 py-2">Branch</th>
               <th className="px-4 py-2">Assigned User</th>
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((device) => (
+            {sorted.map((device) => (
               <tr key={device.device_id} className="border-t border-slate-100">
                 <td className="px-4 py-2 font-mono text-xs text-slate-500">{device.device_id}</td>
                 <td className="px-4 py-2">
@@ -343,7 +364,7 @@ function Devices() {
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && (
+            {sorted.length === 0 && (
               <tr>
                 <td colSpan={9} className="px-4 py-6 text-center text-slate-400">
                   {search ? `No results for "${search}".` : 'No devices yet.'}

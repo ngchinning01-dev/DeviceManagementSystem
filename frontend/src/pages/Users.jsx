@@ -13,6 +13,8 @@ function Users() {
   const [modalOpen, setModalOpen] = useState(false)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
+  const [sortCol, setSortCol] = useState('user_id')
+  const [sortDir, setSortDir] = useState('asc')
 
   const loadUsers = () => {
     apiClient
@@ -22,6 +24,11 @@ function Users() {
   }
 
   useEffect(loadUsers, [])
+
+  const toggleSort = (col) => {
+    if (sortCol === col) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    else { setSortCol(col); setSortDir('asc') }
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -73,6 +80,20 @@ function Users() {
       u.name.toLowerCase().includes(q) ||
       u.email.toLowerCase().includes(q) ||
       (u.department ?? '').toLowerCase().includes(q)
+  )
+
+  const sorted = [...filtered].sort((a, b) => {
+    const cmp = String(a[sortCol] ?? '').localeCompare(String(b[sortCol] ?? ''), undefined, { numeric: true, sensitivity: 'base' })
+    return sortDir === 'asc' ? cmp : -cmp
+  })
+
+  const Th = ({ col, children }) => (
+    <th
+      onClick={() => toggleSort(col)}
+      className="px-4 py-2 cursor-pointer select-none hover:text-slate-700"
+    >
+      {children} {sortCol === col ? (sortDir === 'asc' ? '↑' : '↓') : <span className="opacity-30">↕</span>}
+    </th>
   )
 
   return (
@@ -170,15 +191,15 @@ function Users() {
         <table className="w-full text-sm text-left">
           <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
             <tr>
-              <th className="px-4 py-2">ID</th>
-              <th className="px-4 py-2">Name</th>
+              <Th col="user_id">ID</Th>
+              <Th col="name">Name</Th>
               <th className="px-4 py-2">Email</th>
               <th className="px-4 py-2">Department</th>
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((user) => (
+            {sorted.map((user) => (
               <tr key={user.user_id} className="border-t border-slate-100">
                 <td className="px-4 py-2 font-mono text-xs text-slate-500">{user.user_id}</td>
                 <td className="px-4 py-2">
@@ -204,7 +225,7 @@ function Users() {
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && (
+            {sorted.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
                   {search ? `No results for "${search}".` : 'No users yet.'}
