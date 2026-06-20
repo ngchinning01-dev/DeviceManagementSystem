@@ -17,19 +17,21 @@ function Modal({ isOpen, onClose, title, children }) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg shadow-xl w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-lg shadow-xl w-full max-w-xl mx-4 max-h-[90vh] overflow-visible"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-slate-800">{title}</h3>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 text-xl leading-none"
-          >
-            ✕
-          </button>
+        <div className="overflow-y-auto max-h-[90vh] p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-slate-800">{title}</h3>
+            <button
+              onClick={onClose}
+              className="text-slate-400 hover:text-slate-600 text-xl leading-none"
+            >
+              ✕
+            </button>
+          </div>
+          {children}
         </div>
-        {children}
       </div>
     </div>
   )

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import apiClient from '../api/client'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
+import SearchableSelect from '../components/SearchableSelect'
 
 const emptyForm = {
   device_id: '',
@@ -258,35 +259,29 @@ function Devices() {
             </div>
             <div>
               <label className="block text-xs text-slate-500 mb-1">Branch</label>
-              <select
-                required
+              <SearchableSelect
+                key={`branch-${modalOpen}`}
+                options={branches}
                 value={form.branch_id}
-                onChange={(e) => setForm({ ...form, branch_id: e.target.value })}
-                className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
-              >
-                <option value="">Select branch</option>
-                {branches.map((b) => (
-                  <option key={b.branch_id} value={b.branch_id}>
-                    {b.branch_name}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setForm({ ...form, branch_id: val })}
+                labelKey="branch_name"
+                valueKey="branch_id"
+                placeholder="Select branch"
+                required
+              />
             </div>
           </div>
           <div>
             <label className="block text-xs text-slate-500 mb-1">Assigned User</label>
-            <select
+            <SearchableSelect
+              key={`user-${modalOpen}`}
+              options={users}
               value={form.assigned_user_id}
-              onChange={(e) => setForm({ ...form, assigned_user_id: e.target.value })}
-              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
-            >
-              <option value="">Unassigned</option>
-              {users.map((u) => (
-                <option key={u.user_id} value={u.user_id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setForm({ ...form, assigned_user_id: val })}
+              labelKey="name"
+              valueKey="user_id"
+              placeholder="Unassigned"
+            />
           </div>
           <div className="flex gap-2 mt-1">
             <button

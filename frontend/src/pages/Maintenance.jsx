@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import apiClient from '../api/client'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
+import SearchableSelect from '../components/SearchableSelect'
 
 const emptyForm = { maintenance_id: '', device_id: '', issue: '', solution: '', date: '' }
 
@@ -155,19 +156,16 @@ function Maintenance() {
           </div>
           <div>
             <label className="block text-xs text-slate-500 mb-1">Device</label>
-            <select
-              required
+            <SearchableSelect
+              key={`device-${modalOpen}`}
+              options={devices}
               value={form.device_id}
-              onChange={(e) => setForm({ ...form, device_id: e.target.value })}
-              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
-            >
-              <option value="">Select device</option>
-              {devices.map((d) => (
-                <option key={d.device_id} value={d.device_id}>
-                  {d.device_name}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setForm({ ...form, device_id: val })}
+              labelKey="device_name"
+              valueKey="device_id"
+              placeholder="Select device"
+              required
+            />
           </div>
           <div>
             <label className="block text-xs text-slate-500 mb-1">Issue</label>
