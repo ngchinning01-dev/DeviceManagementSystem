@@ -4,6 +4,7 @@ import apiClient from '../api/client'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
 import SearchableSelect from '../components/SearchableSelect'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 const emptyForm = {
   device_id: '',
@@ -23,6 +24,7 @@ function Devices() {
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [sortCol, setSortCol] = useState('device_id')
@@ -185,6 +187,12 @@ function Devices() {
       )}
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+
+      <ConfirmDialog
+        isOpen={confirmDeleteId !== null}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => { handleDelete(confirmDeleteId); setConfirmDeleteId(null) }}
+      />
 
       <Modal
         isOpen={modalOpen}
@@ -351,7 +359,7 @@ function Devices() {
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(device.device_id)}
+                    onClick={() => setConfirmDeleteId(device.device_id)}
                     className="text-red-600 hover:underline text-xs"
                   >
                     Delete

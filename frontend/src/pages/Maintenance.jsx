@@ -4,6 +4,7 @@ import apiClient from '../api/client'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
 import SearchableSelect from '../components/SearchableSelect'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 const emptyForm = { maintenance_id: '', device_id: '', issue: '', solution: '', date: '' }
 
@@ -12,6 +13,7 @@ function Maintenance() {
   const [devices, setDevices] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [modalOpen, setModalOpen] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [sortCol, setSortCol] = useState('date')
@@ -141,6 +143,12 @@ function Maintenance() {
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
+      <ConfirmDialog
+        isOpen={confirmDeleteId !== null}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => { handleDelete(confirmDeleteId); setConfirmDeleteId(null) }}
+      />
+
       <Modal isOpen={modalOpen} onClose={handleCancel} title="Log Maintenance Record">
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div>
@@ -238,7 +246,7 @@ function Maintenance() {
                 <td className="px-4 py-2">{record.date}</td>
                 <td className="px-4 py-2 text-right">
                   <button
-                    onClick={() => handleDelete(record.maintenance_id)}
+                    onClick={() => setConfirmDeleteId(record.maintenance_id)}
                     className="text-red-600 hover:underline text-xs"
                   >
                     Delete

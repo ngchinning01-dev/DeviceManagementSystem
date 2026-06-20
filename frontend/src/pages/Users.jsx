@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import apiClient from '../api/client'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 const emptyForm = { user_id: '', name: '', email: '', department: '' }
 
@@ -11,6 +12,7 @@ function Users() {
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [sortCol, setSortCol] = useState('user_id')
@@ -119,6 +121,12 @@ function Users() {
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
+      <ConfirmDialog
+        isOpen={confirmDeleteId !== null}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => { handleDelete(confirmDeleteId); setConfirmDeleteId(null) }}
+      />
+
       <Modal
         isOpen={modalOpen}
         onClose={handleCancel}
@@ -217,7 +225,7 @@ function Users() {
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(user.user_id)}
+                    onClick={() => setConfirmDeleteId(user.user_id)}
                     className="text-red-600 hover:underline text-xs"
                   >
                     Delete

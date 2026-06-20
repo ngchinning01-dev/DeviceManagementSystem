@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import apiClient from '../api/client'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 const emptyForm = { branch_id: '', branch_name: '', location: '' }
 
@@ -11,6 +12,7 @@ function Branches() {
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [sortCol, setSortCol] = useState('branch_id')
@@ -114,6 +116,12 @@ function Branches() {
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
+      <ConfirmDialog
+        isOpen={confirmDeleteId !== null}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => { handleDelete(confirmDeleteId); setConfirmDeleteId(null) }}
+      />
+
       <Modal
         isOpen={modalOpen}
         onClose={handleCancel}
@@ -201,7 +209,7 @@ function Branches() {
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(branch.branch_id)}
+                    onClick={() => setConfirmDeleteId(branch.branch_id)}
                     className="text-red-600 hover:underline text-xs"
                   >
                     Delete
