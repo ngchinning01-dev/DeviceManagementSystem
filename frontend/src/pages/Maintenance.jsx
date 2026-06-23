@@ -12,6 +12,7 @@ function Maintenance() {
   const [records, setRecords] = useState([])
   const [devices, setDevices] = useState([])
   const [form, setForm] = useState(emptyForm)
+  const [editingId, setEditingId] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [error, setError] = useState(null)
@@ -53,23 +54,45 @@ function Maintenance() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    apiClient
-      .post('/maintenance', {
-        maintenance_id: form.maintenance_id.trim() || undefined,
-        device_id: form.device_id || null,
-        issue: form.issue,
-        solution: form.solution,
-        date: form.date,
-      })
+    const req = editingId
+      ? apiClient.put(`/maintenance/${editingId}`, {
+          device_id: form.device_id || null,
+          issue: form.issue,
+          solution: form.solution,
+          date: form.date,
+        })
+      : apiClient.post('/maintenance', {
+          maintenance_id: form.maintenance_id.trim() || undefined,
+          device_id: form.device_id || null,
+          issue: form.issue,
+          solution: form.solution,
+          date: form.date,
+        })
+
+    req
       .then(() => {
         setForm(emptyForm)
+        setEditingId(null)
         setModalOpen(false)
         loadRecords()
       })
       .catch((err) => setError(err.response?.data?.error || err.message))
   }
 
+  const handleEdit = (record) => {
+    setEditingId(record.maintenance_id)
+    setForm({
+      maintenance_id: record.maintenance_id,
+      device_id: record.device_id,
+      issue: record.issue,
+      solution: record.solution ?? '',
+      date: record.date ?? '',
+    })
+    setModalOpen(true)
+  }
+
   const handleCancel = () => {
+    setEditingId(null)
     setForm(emptyForm)
     setModalOpen(false)
   }
@@ -110,6 +133,7 @@ function Maintenance() {
         <h2 className="text-xl font-semibold text-slate-800">Maintenance</h2>
         <ActionsMenu
           onAddNew={() => {
+            setEditingId(null)
             setForm(deviceFilter ? { ...emptyForm, device_id: deviceFilter } : emptyForm)
             setModalOpen(true)
           }}
@@ -149,7 +173,7 @@ function Maintenance() {
         onConfirm={() => { handleDelete(confirmDeleteId); setConfirmDeleteId(null) }}
       />
 
-      <Modal isOpen={modalOpen} onClose={handleCancel} title="Log Maintenance Record">
+      <Modal isOpen={modalOpen} onClose={handleCancel} title={editingId ? 'Edit Maintenance Record' : 'Log Maintenance Record'}>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div>
             <label className="block text-xs text-slate-500 mb-1">
@@ -158,8 +182,9 @@ function Maintenance() {
             <input
               value={form.maintenance_id}
               onChange={(e) => setForm({ ...form, maintenance_id: e.target.value })}
-              placeholder="e.g. MR001"
-              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
+              disabled={!!editingId}
+              placeholder={editingId ? '' : 'e.g. MR001'}
+              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full disabled:bg-slate-50 disabled:text-slate-400"
             />
           </div>
           <div>
@@ -207,7 +232,7 @@ function Maintenance() {
               type="submit"
               className="bg-slate-800 text-white text-sm rounded px-4 py-1.5 hover:bg-slate-700"
             >
-              Add Record
+              {editingId ? 'Save Changes' : 'Add Record'}
             </button>
             <button
               type="button"
@@ -244,7 +269,13 @@ function Maintenance() {
                 <td className="px-4 py-2">{record.issue}</td>
                 <td className="px-4 py-2">{record.solution}</td>
                 <td className="px-4 py-2">{record.date}</td>
-                <td className="px-4 py-2 text-right">
+                <td className="px-4 py-2 text-right space-x-3">
+                  <button
+                    onClick={() => handleEdit(record)}
+                    className="text-slate-600 hover:underline text-xs"
+                  >
+                    Edit
+                  </button>
                   <button
                     onClick={() => setConfirmDeleteId(record.maintenance_id)}
                     className="text-red-600 hover:underline text-xs"
