@@ -15,6 +15,8 @@ function Maintenance() {
   const [editingId, setEditingId] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const [resolveRecord, setResolveRecord] = useState(null)
+  const [resolveText, setResolveText] = useState('')
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [sortCol, setSortCol] = useState('date')
@@ -97,6 +99,22 @@ function Maintenance() {
     setModalOpen(false)
   }
 
+  const handleResolveSubmit = () => {
+    apiClient
+      .put(`/maintenance/${resolveRecord.maintenance_id}`, {
+        device_id: resolveRecord.device_id,
+        issue: resolveRecord.issue,
+        solution: resolveText,
+        date: resolveRecord.date,
+      })
+      .then(() => {
+        setResolveRecord(null)
+        setResolveText('')
+        loadRecords()
+      })
+      .catch((err) => setError(err.response?.data?.error || err.message))
+  }
+
   const handleDelete = (id) => {
     apiClient
       .delete(`/maintenance/${id}`)
@@ -172,6 +190,43 @@ function Maintenance() {
         onClose={() => setConfirmDeleteId(null)}
         onConfirm={() => { handleDelete(confirmDeleteId); setConfirmDeleteId(null) }}
       />
+
+      <Modal
+        isOpen={resolveRecord !== null}
+        onClose={() => { setResolveRecord(null); setResolveText('') }}
+        title="Mark as Resolved"
+      >
+        <p className="text-sm text-slate-500 mb-3">
+          Issue: <span className="text-slate-700 font-medium">{resolveRecord?.issue}</span>
+        </p>
+        <div className="mb-4">
+          <label className="block text-xs text-slate-500 mb-1">Solution</label>
+          <input
+            autoFocus
+            value={resolveText}
+            onChange={(e) => setResolveText(e.target.value)}
+            placeholder="Describe how the issue was resolved..."
+            className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
+          />
+        </div>
+        <div className="flex gap-2 justify-end">
+          <button
+            type="button"
+            onClick={() => { setResolveRecord(null); setResolveText('') }}
+            className="bg-slate-200 text-slate-700 text-sm rounded px-4 py-1.5 hover:bg-slate-300"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleResolveSubmit}
+            disabled={!resolveText.trim()}
+            className="bg-green-600 text-white text-sm rounded px-4 py-1.5 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Mark as Resolved
+          </button>
+        </div>
+      </Modal>
 
       <Modal isOpen={modalOpen} onClose={handleCancel} title={editingId ? 'Edit Maintenance Record' : 'Log Maintenance Record'}>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
@@ -267,9 +322,22 @@ function Maintenance() {
                   </Link>
                 </td>
                 <td className="px-4 py-2">{record.issue}</td>
-                <td className="px-4 py-2">{record.solution}</td>
+                <td className="px-4 py-2">
+                  {record.solution
+                    ? <span className="text-slate-700">{record.solution}</span>
+                    : <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Open</span>
+                  }
+                </td>
                 <td className="px-4 py-2">{record.date}</td>
                 <td className="px-4 py-2 text-right space-x-3">
+                  {!record.solution && (
+                    <button
+                      onClick={() => { setResolveRecord(record); setResolveText('') }}
+                      className="text-green-600 hover:underline text-xs"
+                    >
+                      Resolve
+                    </button>
+                  )}
                   <button
                     onClick={() => handleEdit(record)}
                     className="text-slate-600 hover:underline text-xs"
