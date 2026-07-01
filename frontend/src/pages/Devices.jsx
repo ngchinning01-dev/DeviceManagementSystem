@@ -16,6 +16,9 @@ const emptyForm = {
   status: 'Active',
   branch_id: '',
   assigned_user_id: '',
+  purchase_date: '',
+  warranty_expiry: '',
+  cost: '',
 }
 
 function Devices() {
@@ -75,6 +78,9 @@ function Devices() {
           status: form.status,
           branch_id: form.branch_id || null,
           assigned_user_id: form.assigned_user_id || null,
+          purchase_date: form.purchase_date || null,
+          warranty_expiry: form.warranty_expiry || null,
+          cost: form.cost !== '' ? Number(form.cost) : null,
         })
       : apiClient.post('/devices', {
           device_id: form.device_id.trim() || undefined,
@@ -85,6 +91,9 @@ function Devices() {
           status: form.status,
           branch_id: form.branch_id || null,
           assigned_user_id: form.assigned_user_id || null,
+          purchase_date: form.purchase_date || null,
+          warranty_expiry: form.warranty_expiry || null,
+          cost: form.cost !== '' ? Number(form.cost) : null,
         })
 
     req
@@ -108,6 +117,9 @@ function Devices() {
       status: device.status,
       branch_id: device.branch_id ?? '',
       assigned_user_id: device.assigned_user_id ?? '',
+      purchase_date: device.purchase_date ?? '',
+      warranty_expiry: device.warranty_expiry ?? '',
+      cost: device.cost != null ? String(device.cost) : '',
     })
     setModalOpen(true)
   }
@@ -307,6 +319,35 @@ function Devices() {
                 valueKey="branch_id"
                 placeholder="Select branch"
                 required
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Purchase Date</label>
+              <input
+                type="date"
+                value={form.purchase_date}
+                onChange={(e) => setForm({ ...form, purchase_date: e.target.value })}
+                className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Warranty Expiry</label>
+              <input
+                type="date"
+                value={form.warranty_expiry}
+                onChange={(e) => setForm({ ...form, warranty_expiry: e.target.value })}
+                className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Cost ($)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.cost}
+                onChange={(e) => setForm({ ...form, cost: e.target.value })}
+                className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
               />
             </div>
           </div>

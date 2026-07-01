@@ -113,6 +113,23 @@ function DeviceDetail() {
               '—'
             )}
           </p>
+          {device.purchase_date && (
+            <p className="text-sm text-slate-500">Purchase Date: {device.purchase_date}</p>
+          )}
+          {device.warranty_expiry && (() => {
+            const today = new Date(); today.setHours(0, 0, 0, 0)
+            const exp = new Date(device.warranty_expiry + 'T00:00:00')
+            const days = Math.ceil((exp - today) / 86400000)
+            const badge = days < 0
+              ? <span className="ml-1 text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700">Expired</span>
+              : days <= 30
+              ? <span className="ml-1 text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Expiring in {days}d</span>
+              : null
+            return <p className="text-sm text-slate-500">Warranty Expiry: {device.warranty_expiry}{badge}</p>
+          })()}
+          {device.cost != null && (
+            <p className="text-sm text-slate-500">Cost: ${device.cost.toFixed(2)}</p>
+          )}
         </div>
       )}
 

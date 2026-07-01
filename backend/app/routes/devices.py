@@ -1,4 +1,5 @@
 import io
+from datetime import date as _date
 
 import openpyxl
 from flask import Blueprint, jsonify, request, send_file
@@ -9,6 +10,10 @@ from app.utils.excel_import import build_import_response, normalize_str, read_ex
 from app.utils.id_gen import next_id
 
 devices_bp = Blueprint('devices', __name__, url_prefix='/api/devices')
+
+
+def _parse_date(val):
+    return _date.fromisoformat(val) if val else None
 
 
 @devices_bp.get('')
@@ -37,11 +42,12 @@ def export_devices():
     ws = wb.active
     ws.title = 'Devices'
     ws.append(['Device ID', 'Device Name', 'Device Type', 'Serial Number', 'IP Address',
-               'Status', 'Branch ID', 'Assigned User ID'])
+               'Status', 'Branch ID', 'Assigned User ID', 'Purchase Date', 'Warranty Expiry', 'Cost'])
     for d in Device.query.order_by(Device.device_id).all():
         ws.append([
             d.device_id, d.device_name, d.device_type, d.serial_number, d.ip_address,
             d.status, d.branch_id, d.assigned_user_id,
+            d.purchase_date, d.warranty_expiry, d.cost,
         ])
     buf = io.BytesIO()
     wb.save(buf)
@@ -91,6 +97,9 @@ def create_device():
         status=data.get('status', 'Active'),
         branch_id=data['branch_id'],
         assigned_user_id=assigned_user_id,
+        purchase_date=_parse_date(data.get('purchase_date')),
+        warranty_expiry=_parse_date(data.get('warranty_expiry')),
+        cost=float(data['cost']) if data.get('cost') not in (None, '') else None,
     )
     db.session.add(device)
     db.session.commit()
@@ -116,6 +125,13 @@ def update_device(device_id):
         if assigned_user_id and not db.session.get(User, assigned_user_id):
             return jsonify({'error': 'assigned_user_id does not refer to an existing user'}), 400
         device.assigned_user_id = assigned_user_id
+
+    if 'purchase_date' in data:
+        device.purchase_date = _parse_date(data['purchase_date'])
+    if 'warranty_expiry' in data:
+        device.warranty_expiry = _parse_date(data['warranty_expiry'])
+    if 'cost' in data:
+        device.cost = float(data['cost']) if data['cost'] not in (None, '') else None
 
     db.session.commit()
     return jsonify(device.to_dict())

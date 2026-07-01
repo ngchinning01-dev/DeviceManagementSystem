@@ -52,6 +52,10 @@ class Device(db.Model):
     branch_id = db.Column(db.String(50), db.ForeignKey('branches.branch_id'), nullable=False)
     assigned_user_id = db.Column(db.String(50), db.ForeignKey('users.user_id'), nullable=True)
 
+    purchase_date   = db.Column(db.Date, nullable=True)
+    warranty_expiry = db.Column(db.Date, nullable=True)
+    cost            = db.Column(db.Float, nullable=True)
+
     branch = db.relationship('Branch', back_populates='devices')
     assigned_user = db.relationship('User', back_populates='devices')
     maintenance_records = db.relationship(
@@ -70,6 +74,9 @@ class Device(db.Model):
             'branch_name': self.branch.branch_name if self.branch else None,
             'assigned_user_id': self.assigned_user_id,
             'assigned_user_name': self.assigned_user.name if self.assigned_user else None,
+            'purchase_date':   self.purchase_date.isoformat()   if self.purchase_date   else None,
+            'warranty_expiry': self.warranty_expiry.isoformat() if self.warranty_expiry else None,
+            'cost':            self.cost,
         }
 
 

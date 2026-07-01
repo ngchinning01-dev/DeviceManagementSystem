@@ -24,5 +24,16 @@ def create_app(config_class=Config):
     # Create database tables on startup if they don't already exist.
     with app.app_context():
         db.create_all()
+        from sqlalchemy import text
+        for stmt in [
+            "ALTER TABLE devices ADD COLUMN purchase_date DATE",
+            "ALTER TABLE devices ADD COLUMN warranty_expiry DATE",
+            "ALTER TABLE devices ADD COLUMN cost REAL",
+        ]:
+            try:
+                db.session.execute(text(stmt))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
 
     return app
