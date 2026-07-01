@@ -34,6 +34,7 @@ function Devices() {
   const branchFilter = searchParams.get('branch_id')
   const statusFilter = searchParams.get('status')
   const assignedUserFilter = searchParams.get('assigned_user_id')
+  const unassignedFilter = searchParams.get('unassigned')
 
   const loadDevices = () => {
     apiClient
@@ -124,17 +125,19 @@ function Devices() {
   }
 
   const q = search.toLowerCase().trim()
-  const filtered = devices.filter(
-    (d) =>
-      !q ||
-      d.device_name.toLowerCase().includes(q) ||
-      d.device_type.toLowerCase().includes(q) ||
-      (d.serial_number ?? '').toLowerCase().includes(q) ||
-      (d.ip_address ?? '').toLowerCase().includes(q) ||
-      d.status.toLowerCase().includes(q) ||
-      (d.branch_name ?? '').toLowerCase().includes(q) ||
-      (d.assigned_user_name ?? '').toLowerCase().includes(q)
-  )
+  const filtered = devices
+    .filter((d) => !unassignedFilter || !d.assigned_user_id)
+    .filter(
+      (d) =>
+        !q ||
+        d.device_name.toLowerCase().includes(q) ||
+        d.device_type.toLowerCase().includes(q) ||
+        (d.serial_number ?? '').toLowerCase().includes(q) ||
+        (d.ip_address ?? '').toLowerCase().includes(q) ||
+        d.status.toLowerCase().includes(q) ||
+        (d.branch_name ?? '').toLowerCase().includes(q) ||
+        (d.assigned_user_name ?? '').toLowerCase().includes(q)
+    )
 
   const sorted = [...filtered].sort((a, b) => {
     const cmp = String(a[sortCol] ?? '').localeCompare(String(b[sortCol] ?? ''), undefined, { numeric: true, sensitivity: 'base' })
@@ -163,15 +166,35 @@ function Devices() {
         />
       </div>
 
-      <input
-        type="search"
-        placeholder="Search devices..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="mb-4 border border-slate-300 rounded px-3 py-1.5 text-sm w-full max-w-sm bg-white"
-      />
+      <div className="flex items-center gap-2 mb-4">
+        <input
+          type="search"
+          placeholder="Search devices..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border border-slate-300 rounded px-3 py-1.5 text-sm w-full max-w-sm bg-white"
+        />
+        <button
+          onClick={() => {
+            const params = Object.fromEntries(searchParams)
+            if (unassignedFilter) {
+              delete params.unassigned
+            } else {
+              params.unassigned = 'true'
+            }
+            setSearchParams(params)
+          }}
+          className={`whitespace-nowrap text-xs px-3 py-1.5 rounded border transition-colors ${
+            unassignedFilter
+              ? 'bg-slate-800 text-white border-slate-800'
+              : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+          }`}
+        >
+          Unassigned only
+        </button>
+      </div>
 
-      {(branchFilter || statusFilter || assignedUserFilter) && (
+      {(branchFilter || statusFilter || assignedUserFilter || unassignedFilter) && (
         <p className="text-sm text-slate-600 mb-4 bg-slate-100 rounded px-3 py-2">
           Showing devices
           {branchFilter &&
@@ -179,6 +202,7 @@ function Devices() {
           {statusFilter && ` with status "${statusFilter}"`}
           {assignedUserFilter &&
             ` assigned to "${users.find((u) => u.user_id === assignedUserFilter)?.name ?? assignedUserFilter}"`}
+          {unassignedFilter && ' with no assigned user'}
           {' — '}
           <button onClick={() => setSearchParams({})} className="text-slate-800 underline">
             Clear filter
