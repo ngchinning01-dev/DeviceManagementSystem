@@ -15,6 +15,7 @@ function Users() {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
+  const [deptFilter, setDeptFilter] = useState('')
   const [sortCol, setSortCol] = useState('user_id')
   const [sortDir, setSortDir] = useState('asc')
 
@@ -75,14 +76,18 @@ function Users() {
       .catch((err) => setError(err.response?.data?.error || err.message))
   }
 
+  const departments = [...new Set(users.map((u) => u.department).filter(Boolean))].sort()
+
   const q = search.toLowerCase().trim()
-  const filtered = users.filter(
-    (u) =>
-      !q ||
-      u.name.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q) ||
-      (u.department ?? '').toLowerCase().includes(q)
-  )
+  const filtered = users
+    .filter((u) => !deptFilter || u.department === deptFilter)
+    .filter(
+      (u) =>
+        !q ||
+        u.name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        (u.department ?? '').toLowerCase().includes(q)
+    )
 
   const sorted = [...filtered].sort((a, b) => {
     const cmp = String(a[sortCol] ?? '').localeCompare(String(b[sortCol] ?? ''), undefined, { numeric: true, sensitivity: 'base' })
@@ -111,13 +116,25 @@ function Users() {
         />
       </div>
 
-      <input
-        type="search"
-        placeholder="Search users..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="mb-4 border border-slate-300 rounded px-3 py-1.5 text-sm w-full max-w-sm bg-white"
-      />
+      <div className="flex items-center gap-2 mb-4">
+        <input
+          type="search"
+          placeholder="Search users..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border border-slate-300 rounded px-3 py-1.5 text-sm w-full max-w-sm bg-white"
+        />
+        <select
+          value={deptFilter}
+          onChange={(e) => setDeptFilter(e.target.value)}
+          className="border border-slate-300 rounded px-3 py-1.5 text-sm bg-white text-slate-600"
+        >
+          <option value="">All Departments</option>
+          {departments.map((d) => (
+            <option key={d} value={d}>{d}</option>
+          ))}
+        </select>
+      </div>
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
@@ -236,7 +253,7 @@ function Users() {
             {sorted.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
-                  {search ? `No results for "${search}".` : 'No users yet.'}
+                  {search || deptFilter ? `No results for "${search || deptFilter}".` : 'No users yet.'}
                 </td>
               </tr>
             )}
