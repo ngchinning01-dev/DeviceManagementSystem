@@ -5,6 +5,7 @@ import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
 import SearchableSelect from '../components/SearchableSelect'
 import ConfirmDialog from '../components/ConfirmDialog'
+import Pagination from '../components/Pagination'
 
 const emptyForm = { maintenance_id: '', device_id: '', issue: '', solution: '', date: '' }
 
@@ -21,6 +22,8 @@ function Maintenance() {
   const [search, setSearch] = useState('')
   const [sortCol, setSortCol] = useState('date')
   const [sortDir, setSortDir] = useState('desc')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 25
   const [searchParams, setSearchParams] = useSearchParams()
 
   const deviceFilter = searchParams.get('device_id')
@@ -42,6 +45,7 @@ function Maintenance() {
     loadRecords()
     apiClient.get('/devices').then((res) => setDevices(res.data)).catch(() => {})
   }, [deviceFilter, openFilter])
+  useEffect(() => { setPage(1) }, [search, deviceFilter, openFilter])
 
   useEffect(() => {
     if (deviceFilter) {
@@ -135,6 +139,9 @@ function Maintenance() {
     const cmp = String(a[sortCol] ?? '').localeCompare(String(b[sortCol] ?? ''), undefined, { numeric: true, sensitivity: 'base' })
     return sortDir === 'asc' ? cmp : -cmp
   })
+
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE)
+  const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const Th = ({ col, children }) => (
     <th
@@ -313,7 +320,7 @@ function Maintenance() {
             </tr>
           </thead>
           <tbody>
-            {sorted.map((record) => (
+            {paginated.map((record) => (
               <tr key={record.maintenance_id} className="border-t border-slate-100">
                 <td className="px-4 py-2 font-mono text-xs text-slate-500">{record.maintenance_id}</td>
                 <td className="px-4 py-2">
@@ -362,6 +369,7 @@ function Maintenance() {
             )}
           </tbody>
         </table>
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} totalItems={sorted.length} pageSize={PAGE_SIZE} />
       </div>
     </div>
   )

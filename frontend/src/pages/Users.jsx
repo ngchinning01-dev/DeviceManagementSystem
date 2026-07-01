@@ -4,6 +4,7 @@ import apiClient from '../api/client'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
 import ConfirmDialog from '../components/ConfirmDialog'
+import Pagination from '../components/Pagination'
 
 const emptyForm = { user_id: '', name: '', email: '', department: '' }
 
@@ -18,6 +19,8 @@ function Users() {
   const [deptFilter, setDeptFilter] = useState('')
   const [sortCol, setSortCol] = useState('user_id')
   const [sortDir, setSortDir] = useState('asc')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 25
 
   const loadUsers = () => {
     apiClient
@@ -27,6 +30,7 @@ function Users() {
   }
 
   useEffect(loadUsers, [])
+  useEffect(() => { setPage(1) }, [search, deptFilter])
 
   const toggleSort = (col) => {
     if (sortCol === col) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
@@ -93,6 +97,9 @@ function Users() {
     const cmp = String(a[sortCol] ?? '').localeCompare(String(b[sortCol] ?? ''), undefined, { numeric: true, sensitivity: 'base' })
     return sortDir === 'asc' ? cmp : -cmp
   })
+
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE)
+  const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const Th = ({ col, children }) => (
     <th
@@ -224,7 +231,7 @@ function Users() {
             </tr>
           </thead>
           <tbody>
-            {sorted.map((user) => (
+            {paginated.map((user) => (
               <tr key={user.user_id} className="border-t border-slate-100">
                 <td className="px-4 py-2 font-mono text-xs text-slate-500">{user.user_id}</td>
                 <td className="px-4 py-2">
@@ -259,6 +266,7 @@ function Users() {
             )}
           </tbody>
         </table>
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} totalItems={sorted.length} pageSize={PAGE_SIZE} />
       </div>
     </div>
   )

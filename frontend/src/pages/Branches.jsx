@@ -4,6 +4,7 @@ import apiClient from '../api/client'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
 import ConfirmDialog from '../components/ConfirmDialog'
+import Pagination from '../components/Pagination'
 
 const emptyForm = { branch_id: '', branch_name: '', location: '' }
 
@@ -17,6 +18,8 @@ function Branches() {
   const [search, setSearch] = useState('')
   const [sortCol, setSortCol] = useState('branch_id')
   const [sortDir, setSortDir] = useState('asc')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 25
 
   const loadBranches = () => {
     apiClient
@@ -26,6 +29,7 @@ function Branches() {
   }
 
   useEffect(loadBranches, [])
+  useEffect(() => { setPage(1) }, [search])
 
   const toggleSort = (col) => {
     if (sortCol === col) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
@@ -83,6 +87,9 @@ function Branches() {
     const cmp = String(a[sortCol] ?? '').localeCompare(String(b[sortCol] ?? ''), undefined, { numeric: true, sensitivity: 'base' })
     return sortDir === 'asc' ? cmp : -cmp
   })
+
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE)
+  const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const Th = ({ col, children }) => (
     <th
@@ -192,7 +199,7 @@ function Branches() {
             </tr>
           </thead>
           <tbody>
-            {sorted.map((branch) => (
+            {paginated.map((branch) => (
               <tr key={branch.branch_id} className="border-t border-slate-100">
                 <td className="px-4 py-2 font-mono text-xs text-slate-500">{branch.branch_id}</td>
                 <td className="px-4 py-2">
@@ -226,6 +233,7 @@ function Branches() {
             )}
           </tbody>
         </table>
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} totalItems={sorted.length} pageSize={PAGE_SIZE} />
       </div>
     </div>
   )

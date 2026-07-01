@@ -5,6 +5,7 @@ import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
 import SearchableSelect from '../components/SearchableSelect'
 import ConfirmDialog from '../components/ConfirmDialog'
+import Pagination from '../components/Pagination'
 
 const emptyForm = {
   device_id: '',
@@ -29,6 +30,8 @@ function Devices() {
   const [search, setSearch] = useState('')
   const [sortCol, setSortCol] = useState('device_id')
   const [sortDir, setSortDir] = useState('asc')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 25
   const [searchParams, setSearchParams] = useSearchParams()
 
   const branchFilter = searchParams.get('branch_id')
@@ -54,6 +57,7 @@ function Devices() {
     apiClient.get('/branches').then((res) => setBranches(res.data)).catch(() => {})
     apiClient.get('/users').then((res) => setUsers(res.data)).catch(() => {})
   }, [branchFilter, statusFilter, assignedUserFilter])
+  useEffect(() => { setPage(1) }, [search, branchFilter, statusFilter, assignedUserFilter, unassignedFilter])
 
   const toggleSort = (col) => {
     if (sortCol === col) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
@@ -143,6 +147,9 @@ function Devices() {
     const cmp = String(a[sortCol] ?? '').localeCompare(String(b[sortCol] ?? ''), undefined, { numeric: true, sensitivity: 'base' })
     return sortDir === 'asc' ? cmp : -cmp
   })
+
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE)
+  const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const Th = ({ col, children }) => (
     <th
@@ -349,7 +356,7 @@ function Devices() {
             </tr>
           </thead>
           <tbody>
-            {sorted.map((device) => (
+            {paginated.map((device) => (
               <tr key={device.device_id} className="border-t border-slate-100">
                 <td className="px-4 py-2 font-mono text-xs text-slate-500">{device.device_id}</td>
                 <td className="px-4 py-2">
@@ -400,6 +407,7 @@ function Devices() {
             )}
           </tbody>
         </table>
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} totalItems={sorted.length} pageSize={PAGE_SIZE} />
       </div>
     </div>
   )
