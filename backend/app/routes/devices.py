@@ -193,6 +193,13 @@ def import_devices():
             else:
                 device_id = next_id(existing_ids)
 
+            cost_str = normalize_str(record.get('cost'))
+            try:
+                cost = float(cost_str) if cost_str else None
+            except ValueError:
+                errors.append((row_number, f"invalid cost value '{cost_str}'"))
+                continue
+
             seen_ids.add(device_id)
             existing_ids.append(device_id)
             db.session.add(
@@ -205,6 +212,9 @@ def import_devices():
                     status=normalize_str(record.get('status')) or 'Active',
                     branch_id=branch_id,
                     assigned_user_id=assigned_user_id,
+                    purchase_date=_parse_date(normalize_str(record.get('purchase date'))),
+                    warranty_expiry=_parse_date(normalize_str(record.get('warranty expiry'))),
+                    cost=cost,
                 )
             )
             imported += 1

@@ -36,6 +36,10 @@ function Devices() {
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 25
   const [searchParams, setSearchParams] = useSearchParams()
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [bulkStatus, setBulkStatus] = useState('__none__')
+  const [bulkUserId, setBulkUserId] = useState('__none__')
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
   const branchFilter = searchParams.get('branch_id')
   const statusFilter = searchParams.get('status')
@@ -60,7 +64,7 @@ function Devices() {
     apiClient.get('/branches').then((res) => setBranches(res.data)).catch(() => {})
     apiClient.get('/users').then((res) => setUsers(res.data)).catch(() => {})
   }, [branchFilter, statusFilter, assignedUserFilter])
-  useEffect(() => { setPage(1) }, [search, branchFilter, statusFilter, assignedUserFilter, unassignedFilter])
+  useEffect(() => { setPage(1); setSelectedIds(new Set()) }, [search, branchFilter, statusFilter, assignedUserFilter, unassignedFilter])
 
   const toggleSort = (col) => {
     if (sortCol === col) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
@@ -140,6 +144,31 @@ function Devices() {
       .catch((err) => setError(err.response?.data?.error || err.message))
   }
 
+  const toggleSelect = (id) => setSelectedIds((prev) => {
+    const next = new Set(prev)
+    next.has(id) ? next.delete(id) : next.add(id)
+    return next
+  })
+
+  const handleBulkStatus = () => {
+    Promise.all([...selectedIds].map((id) => apiClient.put(`/devices/${id}`, { status: bulkStatus })))
+      .then(() => { setSelectedIds(new Set()); setBulkStatus('__none__'); loadDevices() })
+      .catch((err) => setError(err.response?.data?.error || err.message))
+  }
+
+  const handleBulkReassign = () => {
+    const userId = bulkUserId === '' ? null : bulkUserId
+    Promise.all([...selectedIds].map((id) => apiClient.put(`/devices/${id}`, { assigned_user_id: userId })))
+      .then(() => { setSelectedIds(new Set()); setBulkUserId('__none__'); loadDevices() })
+      .catch((err) => setError(err.response?.data?.error || err.message))
+  }
+
+  const handleBulkDelete = () => {
+    Promise.all([...selectedIds].map((id) => apiClient.delete(`/devices/${id}`)))
+      .then(() => { setSelectedIds(new Set()); loadDevices() })
+      .catch((err) => setError(err.response?.data?.error || err.message))
+  }
+
   const q = search.toLowerCase().trim()
   const filtered = devices
     .filter((d) => !unassignedFilter || !d.assigned_user_id)
@@ -162,6 +191,18 @@ function Devices() {
 
   const totalPages = Math.ceil(sorted.length / PAGE_SIZE)
   const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  const allOnPageSelected = paginated.length > 0 && paginated.every((d) => selectedIds.has(d.device_id))
+
+  const toggleSelectAll = () => {
+    const pageIds = paginated.map((d) => d.device_id)
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (allOnPageSelected) pageIds.forEach((id) => next.delete(id))
+      else pageIds.forEach((id) => next.add(id))
+      return next
+    })
+  }
 
   const Th = ({ col, children }) => (
     <th
@@ -229,12 +270,71 @@ function Devices() {
         </p>
       )}
 
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center gap-3 mb-3 px-3 py-2 bg-slate-800 text-white rounded-lg text-sm">
+          <span className="font-medium whitespace-nowrap">{selectedIds.size} selected</span>
+
+          <div className="flex items-center gap-1">
+            <select
+              value={bulkStatus}
+              onChange={(e) => setBulkStatus(e.target.value)}
+              className="rounded px-2 py-1 text-slate-800 text-xs bg-white border border-slate-300"
+            >
+              <option value="__none__">Change status…</option>
+              <option>Active</option>
+              <option>Inactive</option>
+              <option>Under Maintenance</option>
+              <option>Retired</option>
+            </select>
+            <button
+              onClick={handleBulkStatus}
+              disabled={bulkStatus === '__none__'}
+              className="bg-white text-slate-800 text-xs rounded px-2 py-1 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+            >Apply</button>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <select
+              value={bulkUserId}
+              onChange={(e) => setBulkUserId(e.target.value)}
+              className="rounded px-2 py-1 text-slate-800 text-xs bg-white border border-slate-300"
+            >
+              <option value="__none__">Reassign user…</option>
+              <option value="">— Unassign —</option>
+              {users.map((u) => <option key={u.user_id} value={u.user_id}>{u.name}</option>)}
+            </select>
+            <button
+              onClick={handleBulkReassign}
+              disabled={bulkUserId === '__none__'}
+              className="bg-white text-slate-800 text-xs rounded px-2 py-1 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+            >Apply</button>
+          </div>
+
+          <button
+            onClick={() => setBulkDeleteOpen(true)}
+            className="text-red-300 hover:text-red-100 text-xs"
+          >Delete selected</button>
+
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="ml-auto text-slate-400 hover:text-white text-xs"
+          >✕ Clear</button>
+        </div>
+      )}
+
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
       <ConfirmDialog
         isOpen={confirmDeleteId !== null}
         onClose={() => setConfirmDeleteId(null)}
         onConfirm={() => { handleDelete(confirmDeleteId); setConfirmDeleteId(null) }}
+      />
+
+      <ConfirmDialog
+        isOpen={bulkDeleteOpen}
+        onClose={() => setBulkDeleteOpen(false)}
+        onConfirm={() => { handleBulkDelete(); setBulkDeleteOpen(false) }}
+        message={`Delete ${selectedIds.size} device${selectedIds.size !== 1 ? 's' : ''}? This cannot be undone.`}
       />
 
       <Modal
@@ -385,6 +485,14 @@ function Devices() {
         <table className="w-full text-sm text-left">
           <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
             <tr>
+              <th className="px-4 py-2 w-8">
+                <input
+                  type="checkbox"
+                  checked={allOnPageSelected}
+                  onChange={toggleSelectAll}
+                  className="cursor-pointer"
+                />
+              </th>
               <Th col="device_id">ID</Th>
               <Th col="device_name">Name</Th>
               <th className="px-4 py-2">Type</th>
@@ -398,7 +506,15 @@ function Devices() {
           </thead>
           <tbody>
             {paginated.map((device) => (
-              <tr key={device.device_id} className="border-t border-slate-100">
+              <tr key={device.device_id} className={`border-t border-slate-100 ${selectedIds.has(device.device_id) ? 'bg-slate-50' : ''}`}>
+                <td className="px-4 py-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(device.device_id)}
+                    onChange={() => toggleSelect(device.device_id)}
+                    className="cursor-pointer"
+                  />
+                </td>
                 <td className="px-4 py-2 font-mono text-xs text-slate-500">{device.device_id}</td>
                 <td className="px-4 py-2">
                   <Link to={`/devices/${device.device_id}`} className="text-slate-700 hover:underline">
@@ -441,7 +557,7 @@ function Devices() {
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={10} className="px-4 py-6 text-center text-slate-400">
                   {search ? `No results for "${search}".` : 'No devices yet.'}
                 </td>
               </tr>
