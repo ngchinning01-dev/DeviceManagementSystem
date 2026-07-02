@@ -1,5 +1,7 @@
 from datetime import date
 
+import bcrypt
+
 from app.extensions import db
 
 
@@ -100,3 +102,17 @@ class Maintenance(db.Model):
             'solution': self.solution,
             'date': self.date.isoformat() if self.date else None,
         }
+
+
+class Admin(db.Model):
+    __tablename__ = 'admins'
+
+    id            = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    username      = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+
+    def set_password(self, password):
+        self.password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+    def check_password(self, password):
+        return bcrypt.checkpw(password.encode(), self.password_hash.encode())

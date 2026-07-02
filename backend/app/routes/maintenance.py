@@ -5,6 +5,7 @@ from flask import Blueprint, jsonify, request, send_file
 
 from app.extensions import db
 from app.models import Device, Maintenance
+from app.utils.auth import require_auth
 from app.utils.dates import parse_date
 from app.utils.excel_import import build_import_response, normalize_str, read_excel_rows
 from app.utils.id_gen import next_id
@@ -13,6 +14,7 @@ maintenance_bp = Blueprint('maintenance', __name__, url_prefix='/api/maintenance
 
 
 @maintenance_bp.get('')
+@require_auth
 def list_maintenance():
     query = Maintenance.query
 
@@ -28,6 +30,7 @@ def list_maintenance():
 
 
 @maintenance_bp.get('/export')
+@require_auth
 def export_maintenance():
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -52,12 +55,14 @@ def export_maintenance():
 
 
 @maintenance_bp.get('/<maintenance_id>')
+@require_auth
 def get_maintenance(maintenance_id):
     record = db.get_or_404(Maintenance, maintenance_id)
     return jsonify(record.to_dict())
 
 
 @maintenance_bp.post('')
+@require_auth
 def create_maintenance():
     data = request.get_json() or {}
 
@@ -91,6 +96,7 @@ def create_maintenance():
 
 
 @maintenance_bp.put('/<maintenance_id>')
+@require_auth
 def update_maintenance(maintenance_id):
     record = db.get_or_404(Maintenance, maintenance_id)
     data = request.get_json() or {}
@@ -111,6 +117,7 @@ def update_maintenance(maintenance_id):
 
 
 @maintenance_bp.delete('/<maintenance_id>')
+@require_auth
 def delete_maintenance(maintenance_id):
     record = db.get_or_404(Maintenance, maintenance_id)
     db.session.delete(record)
@@ -119,6 +126,7 @@ def delete_maintenance(maintenance_id):
 
 
 @maintenance_bp.post('/import')
+@require_auth
 def import_maintenance():
     file = request.files.get('file')
     if not file or not file.filename.lower().endswith('.xlsx'):

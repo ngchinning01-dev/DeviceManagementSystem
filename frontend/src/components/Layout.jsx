@@ -1,5 +1,5 @@
-// Sidebar navigation links shown on every page.
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 const navItems = [
   { to: '/', label: 'Dashboard', end: true },
@@ -9,13 +9,20 @@ const navItems = [
   { to: '/maintenance', label: 'Maintenance' },
 ]
 
-// Page shell: a fixed sidebar with navigation plus the current route's content (Outlet).
 function Layout() {
+  const { logout } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login', { replace: true })
+  }
+
   return (
     <div className="flex min-h-screen">
-      <aside className="w-60 shrink-0 bg-slate-900 text-slate-100 p-4">
+      <aside className="w-60 shrink-0 bg-slate-900 text-slate-100 p-4 flex flex-col">
         <h1 className="text-lg font-semibold mb-6 px-2">Device Manager</h1>
-        <nav className="flex flex-col gap-1">
+        <nav className="flex flex-col gap-1 flex-1">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -33,6 +40,12 @@ function Layout() {
             </NavLink>
           ))}
         </nav>
+        <button
+          onClick={handleLogout}
+          className="mt-4 text-left rounded px-3 py-2 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+        >
+          Sign out
+        </button>
       </aside>
 
       <main className="flex-1 p-6">

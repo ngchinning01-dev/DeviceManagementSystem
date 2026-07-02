@@ -23,6 +23,7 @@ def create_app(config_class=Config):
 
     # Create database tables on startup if they don't already exist.
     with app.app_context():
+        import os
         db.create_all()
         from sqlalchemy import text
         for stmt in [
@@ -35,5 +36,13 @@ def create_app(config_class=Config):
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+
+        # Seed default admin account on first run.
+        from app.models import Admin
+        if not Admin.query.first():
+            admin = Admin(username=os.environ.get('ADMIN_USERNAME', 'admin'))
+            admin.set_password(os.environ.get('ADMIN_PASSWORD', 'admin123'))
+            db.session.add(admin)
+            db.session.commit()
 
     return app

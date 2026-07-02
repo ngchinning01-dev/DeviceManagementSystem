@@ -5,6 +5,7 @@ from flask import Blueprint, jsonify, request, send_file
 
 from app.extensions import db
 from app.models import Branch
+from app.utils.auth import require_auth
 from app.utils.excel_import import build_import_response, normalize_str, read_excel_rows
 from app.utils.id_gen import next_id
 
@@ -12,12 +13,14 @@ branches_bp = Blueprint('branches', __name__, url_prefix='/api/branches')
 
 
 @branches_bp.get('')
+@require_auth
 def list_branches():
     branches = Branch.query.order_by(Branch.branch_id).all()
     return jsonify([b.to_dict() for b in branches])
 
 
 @branches_bp.get('/export')
+@require_auth
 def export_branches():
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -37,12 +40,14 @@ def export_branches():
 
 
 @branches_bp.get('/<branch_id>')
+@require_auth
 def get_branch(branch_id):
     branch = db.get_or_404(Branch, branch_id)
     return jsonify(branch.to_dict())
 
 
 @branches_bp.post('')
+@require_auth
 def create_branch():
     data = request.get_json() or {}
     if not data.get('branch_name'):
@@ -61,6 +66,7 @@ def create_branch():
 
 
 @branches_bp.put('/<branch_id>')
+@require_auth
 def update_branch(branch_id):
     branch = db.get_or_404(Branch, branch_id)
     data = request.get_json() or {}
@@ -72,6 +78,7 @@ def update_branch(branch_id):
 
 
 @branches_bp.delete('/<branch_id>')
+@require_auth
 def delete_branch(branch_id):
     branch = db.get_or_404(Branch, branch_id)
     db.session.delete(branch)
@@ -80,6 +87,7 @@ def delete_branch(branch_id):
 
 
 @branches_bp.post('/import')
+@require_auth
 def import_branches():
     file = request.files.get('file')
     if not file or not file.filename.lower().endswith('.xlsx'):

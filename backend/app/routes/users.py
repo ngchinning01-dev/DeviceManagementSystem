@@ -5,6 +5,7 @@ from flask import Blueprint, jsonify, request, send_file
 
 from app.extensions import db
 from app.models import User
+from app.utils.auth import require_auth
 from app.utils.excel_import import build_import_response, normalize_str, read_excel_rows
 from app.utils.id_gen import next_id
 
@@ -12,12 +13,14 @@ users_bp = Blueprint('users', __name__, url_prefix='/api/users')
 
 
 @users_bp.get('')
+@require_auth
 def list_users():
     users = User.query.order_by(User.user_id).all()
     return jsonify([u.to_dict() for u in users])
 
 
 @users_bp.get('/export')
+@require_auth
 def export_users():
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -37,12 +40,14 @@ def export_users():
 
 
 @users_bp.get('/<user_id>')
+@require_auth
 def get_user(user_id):
     user = db.get_or_404(User, user_id)
     return jsonify(user.to_dict())
 
 
 @users_bp.post('')
+@require_auth
 def create_user():
     data = request.get_json() or {}
     if not data.get('name') or not data.get('email'):
@@ -64,6 +69,7 @@ def create_user():
 
 
 @users_bp.put('/<user_id>')
+@require_auth
 def update_user(user_id):
     user = db.get_or_404(User, user_id)
     data = request.get_json() or {}
@@ -76,6 +82,7 @@ def update_user(user_id):
 
 
 @users_bp.delete('/<user_id>')
+@require_auth
 def delete_user(user_id):
     user = db.get_or_404(User, user_id)
     db.session.delete(user)
@@ -84,6 +91,7 @@ def delete_user(user_id):
 
 
 @users_bp.post('/import')
+@require_auth
 def import_users():
     file = request.files.get('file')
     if not file or not file.filename.lower().endswith('.xlsx'):
