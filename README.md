@@ -37,6 +37,7 @@ The app runs at `http://localhost:5173` and talks to the Flask API via
 
 | Resource | Endpoints |
 |---|---|
+| Auth | `POST /api/auth/login`, `GET /api/auth/me` |
 | Branches | `GET/POST /api/branches`, `GET/PUT/DELETE /api/branches/<id>` |
 | Devices | `GET/POST /api/devices`, `GET/PUT/DELETE /api/devices/<id>` (filter by `?branch_id=` / `?status=`) |
 | Users | `GET/POST /api/users`, `GET/PUT/DELETE /api/users/<id>` |
@@ -49,5 +50,4 @@ The app runs at `http://localhost:5173` and talks to the Flask API via
 - Add the AI Assistant features (natural-language search, troubleshooting)
   described in `Project_Planning.md` section 4.6, e.g. a `/api/assistant`
   blueprint that wraps an LLM API call.
-- Add authentication for admin access.
 - Switch `DATABASE_URL` to MySQL/PostgreSQL for production.

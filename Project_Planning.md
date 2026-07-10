@@ -95,43 +95,53 @@ AI:    "Possible causes: Network issue, Driver problem, IP Conflict, Hardware is
 
 ---
 
-## 6. Database Design (Initial)
+## 6. Database Design (Current)
 
 ### Branch
-| Field | Type |
-|-------|------|
-| Branch_ID | Primary Key |
-| Branch_Name | String |
-| Location | String |
-
-### Device
-| Field | Type |
-|-------|------|
-| Device_ID | Primary Key |
-| Device_Name | String |
-| Device_Type | String |
-| Serial_Number | String |
-| IP_Address | String |
-| Status | String |
-| Branch_ID | Foreign Key |
-| Assigned_User | Foreign Key |
-
-### Maintenance
-| Field | Type |
-|-------|------|
-| Maintenance_ID | Primary Key |
-| Device_ID | Foreign Key |
-| Issue | String |
-| Solution | String |
-| Date | Date |
+| Field | Type | Notes |
+|-------|------|-------|
+| Branch_ID | String (PK) | |
+| Branch_Name | String | Required |
+| Location | String | |
 
 ### User
-| Field | Type |
-|-------|------|
-| User_ID | Primary Key |
-| Name | String |
-| Email | String |
-| Department | String |
+| Field | Type | Notes |
+|-------|------|-------|
+| User_ID | String (PK) | |
+| Name | String | Required |
+| Email | String | Unique, Required |
+| Department | String | |
+
+### Device
+| Field | Type | Notes |
+|-------|------|-------|
+| Device_ID | String (PK) | |
+| Device_Name | String | Required |
+| Device_Type | String | Required |
+| Serial_Number | String | |
+| IP_Address | String | |
+| Status | String | Default: Active |
+| Branch_ID | String (FK → Branch) | Required |
+| Assigned_User_ID | String (FK → User) | Nullable |
+| Purchase_Date | Date | Nullable |
+| Warranty_Expiry | Date | Nullable |
+| Cost | Float | Nullable |
+
+### Maintenance
+| Field | Type | Notes |
+|-------|------|-------|
+| Maintenance_ID | String (PK) | |
+| Device_ID | String (FK → Device) | Required |
+| Issue | String | Required |
+| Solution | String | Nullable |
+| Date | Date | Default: today |
+
+### Admin
+| Field | Type | Notes |
+|-------|------|-------|
+| ID | Integer (PK) | Auto-increment |
+| Username | String | Unique, Required |
+| Password_Hash | String | bcrypt hashed |
 
 ---
 
