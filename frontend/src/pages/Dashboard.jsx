@@ -38,6 +38,7 @@ function StatCard({ label, value, to }) {
 function Dashboard() {
   const [stats, setStats] = useState(null)
   const [trend, setTrend] = useState([])
+  const [alerts, setAlerts] = useState(null)
   const [error, setError] = useState(null)
   const navigate = useNavigate()
 
@@ -47,6 +48,9 @@ function Dashboard() {
       .catch((err) => setError(err.message))
     apiClient.get('/dashboard/maintenance-trend')
       .then((res) => setTrend(res.data))
+      .catch(() => {})
+    apiClient.get('/dashboard/alerts')
+      .then((res) => setAlerts(res.data))
       .catch(() => {})
   }, [])
 
@@ -72,6 +76,52 @@ function Dashboard() {
         <StatCard label="Active Devices" value={stats?.active_devices ?? '—'} to="/devices?status=Active" />
         <StatCard label="Open Maintenance Issues" value={stats?.open_maintenance ?? '—'} to="/maintenance?open=true" />
       </div>
+
+      {alerts && (alerts.warranty_alerts.length > 0 || alerts.overdue_maintenance.length > 0) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+          {alerts.warranty_alerts.length > 0 && (
+            <div className="bg-white rounded-lg shadow-sm p-4">
+              <h3 className="text-sm font-semibold text-slate-700 mb-3">Warranty Alerts</h3>
+              <ul className="divide-y divide-slate-100">
+                {alerts.warranty_alerts.map((d) => (
+                  <li key={d.device_id} className="py-2 flex items-center justify-between text-sm">
+                    <div>
+                      <Link to={`/devices/${d.device_id}`} className="text-slate-700 hover:underline">
+                        {d.device_name}
+                      </Link>
+                      <span className="text-slate-400"> · {d.branch_name}</span>
+                    </div>
+                    <span className={d.days_remaining < 0 ? 'text-red-600' : 'text-amber-600'}>
+                      {d.days_remaining < 0
+                        ? `Expired ${Math.abs(d.days_remaining)}d ago`
+                        : `Expires in ${d.days_remaining}d`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {alerts.overdue_maintenance.length > 0 && (
+            <div className="bg-white rounded-lg shadow-sm p-4">
+              <h3 className="text-sm font-semibold text-slate-700 mb-3">Overdue Maintenance</h3>
+              <ul className="divide-y divide-slate-100">
+                {alerts.overdue_maintenance.map((m) => (
+                  <li key={m.maintenance_id} className="py-2 flex items-center justify-between text-sm">
+                    <div>
+                      <Link to={`/devices/${m.device_id}`} className="text-slate-700 hover:underline">
+                        {m.device_name}
+                      </Link>
+                      <span className="text-slate-400"> · {m.issue}</span>
+                    </div>
+                    <span className="text-red-600">Open {m.days_open}d</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
 

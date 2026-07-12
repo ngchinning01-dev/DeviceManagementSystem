@@ -1,7 +1,10 @@
-from flask import Blueprint, jsonify
+from datetime import date, timedelta
+
+from flask import Blueprint, jsonify, request
 
 from app.extensions import db
 from app.models import Branch, Device, Maintenance
+from app.utils.auth import require_auth
 
 # API for dashboard summary statistics (/api/dashboard).
 dashboard_bp = Blueprint('dashboard', __name__, url_prefix='/api/dashboard')
@@ -42,6 +45,52 @@ def summary():
             'open_maintenance': open_maintenance,
             'devices_by_status': devices_by_status,
             'devices_by_branch': devices_by_branch,
+        }
+    )
+
+
+@dashboard_bp.get('/alerts')
+@require_auth
+def alerts():
+    today = date.today()
+    warranty_days = request.args.get('warranty_days', 30, type=int)
+    maintenance_days = request.args.get('maintenance_days', 14, type=int)
+
+    warranty_alerts = (
+        Device.query.filter(
+            Device.warranty_expiry.isnot(None),
+            Device.warranty_expiry <= today + timedelta(days=warranty_days),
+            Device.status != 'Retired',
+        )
+        .order_by(Device.warranty_expiry.asc())
+        .all()
+    )
+
+    overdue_maintenance = (
+        Maintenance.query.filter(
+            Maintenance.solution.is_(None),
+            Maintenance.date <= today - timedelta(days=maintenance_days),
+        )
+        .order_by(Maintenance.date.asc())
+        .all()
+    )
+
+    return jsonify(
+        {
+            'warranty_alerts': [
+                {
+                    **d.to_dict(),
+                    'days_remaining': (d.warranty_expiry - today).days,
+                }
+                for d in warranty_alerts
+            ],
+            'overdue_maintenance': [
+                {
+                    **m.to_dict(),
+                    'days_open': (today - m.date).days,
+                }
+                for m in overdue_maintenance
+            ],
         }
     )
 
