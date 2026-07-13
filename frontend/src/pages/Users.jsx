@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import apiClient from '../api/client'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
+import UserForm, { emptyUserForm } from '../components/UserForm'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Pagination from '../components/Pagination'
 
-const emptyForm = { user_id: '', name: '', email: '', department: '' }
+const emptyForm = emptyUserForm
 
 function Users() {
   const [users, setUsers] = useState([])
@@ -21,6 +22,7 @@ function Users() {
   const [sortDir, setSortDir] = useState('asc')
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 25
+  const navigate = useNavigate()
 
   const loadUsers = () => {
     apiClient
@@ -156,67 +158,13 @@ function Users() {
         onClose={handleCancel}
         title={editingId ? 'Edit User' : 'Add User'}
       >
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <div>
-            <label className="block text-xs text-slate-500 mb-1">
-              ID{' '}
-              {editingId ? (
-                <span className="text-slate-400">(cannot be changed)</span>
-              ) : (
-                <span className="text-slate-400">(optional — auto-generated if blank)</span>
-              )}
-            </label>
-            <input
-              value={form.user_id}
-              onChange={(e) => setForm({ ...form, user_id: e.target.value })}
-              disabled={!!editingId}
-              placeholder={editingId ? '' : 'e.g. U001'}
-              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full disabled:bg-slate-50 disabled:text-slate-400"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-slate-500 mb-1">Name</label>
-            <input
-              required
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-slate-500 mb-1">Email</label>
-            <input
-              type="email"
-              required
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-slate-500 mb-1">Department</label>
-            <input
-              value={form.department}
-              onChange={(e) => setForm({ ...form, department: e.target.value })}
-              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
-            />
-          </div>
-          <div className="flex gap-2 mt-1">
-            <button
-              type="submit"
-              className="bg-slate-800 text-white text-sm rounded px-4 py-1.5 hover:bg-slate-700"
-            >
-              {editingId ? 'Save Changes' : 'Add User'}
-            </button>
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="bg-slate-200 text-slate-700 text-sm rounded px-4 py-1.5 hover:bg-slate-300"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+        <UserForm
+          form={form}
+          setForm={setForm}
+          editingId={editingId}
+          onSubmit={handleSubmit}
+          onCancel={handleCancel}
+        />
       </Modal>
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -232,7 +180,11 @@ function Users() {
           </thead>
           <tbody>
             {paginated.map((user) => (
-              <tr key={user.user_id} className="border-t border-slate-100">
+              <tr
+                key={user.user_id}
+                onClick={() => navigate(`/users/${user.user_id}`)}
+                className="border-t border-slate-100 cursor-pointer hover:bg-slate-50"
+              >
                 <td className="px-4 py-2 font-mono text-xs text-slate-500">{user.user_id}</td>
                 <td className="px-4 py-2">
                   <Link to={`/users/${user.user_id}`} className="text-slate-700 hover:underline">
@@ -241,7 +193,7 @@ function Users() {
                 </td>
                 <td className="px-4 py-2">{user.email}</td>
                 <td className="px-4 py-2">{user.department}</td>
-                <td className="px-4 py-2 text-right space-x-3">
+                <td className="px-4 py-2 text-right space-x-3" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => handleEdit(user)}
                     className="text-slate-600 hover:underline text-xs"

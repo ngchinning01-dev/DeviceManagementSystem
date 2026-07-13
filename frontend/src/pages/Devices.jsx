@@ -1,25 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import apiClient from '../api/client'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
-import SearchableSelect from '../components/SearchableSelect'
+import DeviceForm, { emptyDeviceForm } from '../components/DeviceForm'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Pagination from '../components/Pagination'
 
-const emptyForm = {
-  device_id: '',
-  device_name: '',
-  device_type: '',
-  serial_number: '',
-  ip_address: '',
-  status: 'Active',
-  branch_id: '',
-  assigned_user_id: '',
-  purchase_date: '',
-  warranty_expiry: '',
-  cost: '',
-}
+const emptyForm = emptyDeviceForm
 
 function Devices() {
   const [devices, setDevices] = useState([])
@@ -36,6 +24,7 @@ function Devices() {
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 25
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [bulkStatus, setBulkStatus] = useState('__none__')
   const [bulkUserId, setBulkUserId] = useState('__none__')
@@ -342,143 +331,16 @@ function Devices() {
         onClose={handleCancel}
         title={editingId ? 'Edit Device' : 'Add Device'}
       >
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <div>
-            <label className="block text-xs text-slate-500 mb-1">
-              ID{' '}
-              {editingId ? (
-                <span className="text-slate-400">(cannot be changed)</span>
-              ) : (
-                <span className="text-slate-400">(optional — auto-generated if blank)</span>
-              )}
-            </label>
-            <input
-              value={form.device_id}
-              onChange={(e) => setForm({ ...form, device_id: e.target.value })}
-              disabled={!!editingId}
-              placeholder={editingId ? '' : 'e.g. DV001'}
-              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full disabled:bg-slate-50 disabled:text-slate-400"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-slate-500 mb-1">Name</label>
-              <input
-                required
-                value={form.device_name}
-                onChange={(e) => setForm({ ...form, device_name: e.target.value })}
-                className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-slate-500 mb-1">Type</label>
-              <input
-                required
-                value={form.device_type}
-                onChange={(e) => setForm({ ...form, device_type: e.target.value })}
-                className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-slate-500 mb-1">Serial Number</label>
-              <input
-                value={form.serial_number}
-                onChange={(e) => setForm({ ...form, serial_number: e.target.value })}
-                className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-slate-500 mb-1">IP Address</label>
-              <input
-                value={form.ip_address}
-                onChange={(e) => setForm({ ...form, ip_address: e.target.value })}
-                className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-slate-500 mb-1">Status</label>
-              <select
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
-              >
-                <option>Active</option>
-                <option>Inactive</option>
-                <option>Under Maintenance</option>
-                <option>Retired</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs text-slate-500 mb-1">Branch</label>
-              <SearchableSelect
-                key={`branch-${modalOpen}`}
-                options={branches}
-                value={form.branch_id}
-                onChange={(val) => setForm({ ...form, branch_id: val })}
-                labelKey="branch_name"
-                valueKey="branch_id"
-                placeholder="Select branch"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-slate-500 mb-1">Purchase Date</label>
-              <input
-                type="date"
-                value={form.purchase_date}
-                onChange={(e) => setForm({ ...form, purchase_date: e.target.value })}
-                className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-slate-500 mb-1">Warranty Expiry</label>
-              <input
-                type="date"
-                value={form.warranty_expiry}
-                onChange={(e) => setForm({ ...form, warranty_expiry: e.target.value })}
-                className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-slate-500 mb-1">Cost ($)</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.cost}
-                onChange={(e) => setForm({ ...form, cost: e.target.value })}
-                className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs text-slate-500 mb-1">Assigned User</label>
-            <SearchableSelect
-              key={`user-${modalOpen}`}
-              options={users}
-              value={form.assigned_user_id}
-              onChange={(val) => setForm({ ...form, assigned_user_id: val })}
-              labelKey="name"
-              valueKey="user_id"
-              placeholder="Unassigned"
-            />
-          </div>
-          <div className="flex gap-2 mt-1">
-            <button
-              type="submit"
-              className="bg-slate-800 text-white text-sm rounded px-4 py-1.5 hover:bg-slate-700"
-            >
-              {editingId ? 'Save Changes' : 'Add Device'}
-            </button>
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="bg-slate-200 text-slate-700 text-sm rounded px-4 py-1.5 hover:bg-slate-300"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+        <DeviceForm
+          form={form}
+          setForm={setForm}
+          editingId={editingId}
+          branches={branches}
+          users={users}
+          onSubmit={handleSubmit}
+          onCancel={handleCancel}
+          isOpen={modalOpen}
+        />
       </Modal>
 
       <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
@@ -506,8 +368,12 @@ function Devices() {
           </thead>
           <tbody>
             {paginated.map((device) => (
-              <tr key={device.device_id} className={`border-t border-slate-100 ${selectedIds.has(device.device_id) ? 'bg-slate-50' : ''}`}>
-                <td className="px-4 py-2">
+              <tr
+                key={device.device_id}
+                onClick={() => navigate(`/devices/${device.device_id}`)}
+                className={`border-t border-slate-100 cursor-pointer hover:bg-slate-50 ${selectedIds.has(device.device_id) ? 'bg-slate-50' : ''}`}
+              >
+                <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
                     checked={selectedIds.has(device.device_id)}
@@ -525,12 +391,12 @@ function Devices() {
                 <td className="px-4 py-2">{device.serial_number}</td>
                 <td className="px-4 py-2">{device.ip_address}</td>
                 <td className="px-4 py-2">{device.status}</td>
-                <td className="px-4 py-2">
+                <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
                   <Link to={`/branches/${device.branch_id}`} className="text-slate-700 hover:underline">
                     {device.branch_name}
                   </Link>
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
                   {device.assigned_user_id ? (
                     <Link to={`/users/${device.assigned_user_id}`} className="text-slate-700 hover:underline">
                       {device.assigned_user_name}
@@ -539,7 +405,7 @@ function Devices() {
                     '—'
                   )}
                 </td>
-                <td className="px-4 py-2 text-right space-x-3">
+                <td className="px-4 py-2 text-right space-x-3" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => handleEdit(device)}
                     className="text-slate-600 hover:underline text-xs"

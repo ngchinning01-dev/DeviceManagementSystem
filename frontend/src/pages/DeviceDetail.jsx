@@ -1,17 +1,32 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import apiClient from '../api/client'
 import Modal from '../components/Modal'
+import ConfirmDialog from '../components/ConfirmDialog'
+import DeviceForm, { emptyDeviceForm } from '../components/DeviceForm'
 
 // Device detail page: shows a device's info, its branch/assigned user, and its
 // maintenance history, with a link to log new maintenance for it.
 function DeviceDetail() {
   const { deviceId } = useParams()
+  const navigate = useNavigate()
   const [device, setDevice] = useState(null)
   const [records, setRecords] = useState([])
+  const [branches, setBranches] = useState([])
+  const [users, setUsers] = useState([])
   const [error, setError] = useState(null)
   const [resolveRecord, setResolveRecord] = useState(null)
   const [resolveText, setResolveText] = useState('')
+  const [editOpen, setEditOpen] = useState(false)
+  const [form, setForm] = useState(emptyDeviceForm)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+
+  const loadDevice = () => {
+    apiClient
+      .get(`/devices/${deviceId}`)
+      .then((res) => setDevice(res.data))
+      .catch((err) => setError(err.message))
+  }
 
   const loadRecords = () => {
     apiClient
@@ -21,13 +36,57 @@ function DeviceDetail() {
   }
 
   useEffect(() => {
-    apiClient
-      .get(`/devices/${deviceId}`)
-      .then((res) => setDevice(res.data))
-      .catch((err) => setError(err.message))
-
+    loadDevice()
     loadRecords()
+    apiClient.get('/branches').then((res) => setBranches(res.data)).catch(() => {})
+    apiClient.get('/users').then((res) => setUsers(res.data)).catch(() => {})
   }, [deviceId])
+
+  const handleEditOpen = () => {
+    setForm({
+      device_id: device.device_id,
+      device_name: device.device_name,
+      device_type: device.device_type,
+      serial_number: device.serial_number ?? '',
+      ip_address: device.ip_address ?? '',
+      status: device.status,
+      branch_id: device.branch_id ?? '',
+      assigned_user_id: device.assigned_user_id ?? '',
+      purchase_date: device.purchase_date ?? '',
+      warranty_expiry: device.warranty_expiry ?? '',
+      cost: device.cost != null ? String(device.cost) : '',
+    })
+    setEditOpen(true)
+  }
+
+  const handleEditSubmit = (e) => {
+    e.preventDefault()
+    apiClient
+      .put(`/devices/${deviceId}`, {
+        device_name: form.device_name,
+        device_type: form.device_type,
+        serial_number: form.serial_number,
+        ip_address: form.ip_address,
+        status: form.status,
+        branch_id: form.branch_id || null,
+        assigned_user_id: form.assigned_user_id || null,
+        purchase_date: form.purchase_date || null,
+        warranty_expiry: form.warranty_expiry || null,
+        cost: form.cost !== '' ? Number(form.cost) : null,
+      })
+      .then(() => {
+        setEditOpen(false)
+        loadDevice()
+      })
+      .catch((err) => setError(err.response?.data?.error || err.message))
+  }
+
+  const handleDeleteConfirm = () => {
+    apiClient
+      .delete(`/devices/${deviceId}`)
+      .then(() => navigate('/devices'))
+      .catch((err) => setError(err.response?.data?.error || err.message))
+  }
 
   const handleResolveSubmit = () => {
     apiClient
@@ -47,11 +106,47 @@ function DeviceDetail() {
 
   return (
     <div>
-      <Link to="/devices" className="text-sm text-slate-500 hover:underline">
-        ← Back to Devices
-      </Link>
+      <div className="flex justify-between items-center">
+        <Link to="/devices" className="text-sm text-slate-500 hover:underline">
+          ← Back to Devices
+        </Link>
+        {device && (
+          <div className="space-x-3">
+            <button onClick={handleEditOpen} className="text-sm text-slate-600 hover:underline">
+              Edit
+            </button>
+            <button onClick={() => setDeleteOpen(true)} className="text-sm text-red-600 hover:underline">
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
 
       {error && <p className="text-sm text-red-600 mt-4">{error}</p>}
+
+      <ConfirmDialog
+        isOpen={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={() => { handleDeleteConfirm(); setDeleteOpen(false) }}
+      />
+
+      <Modal
+        isOpen={editOpen}
+        onClose={() => setEditOpen(false)}
+        title="Edit Device"
+      >
+        <DeviceForm
+          form={form}
+          setForm={setForm}
+          editingId={deviceId}
+          branches={branches}
+          users={users}
+          onSubmit={handleEditSubmit}
+          onCancel={() => setEditOpen(false)}
+          submitLabel="Save Changes"
+          isOpen={editOpen}
+        />
+      </Modal>
 
       <Modal
         isOpen={resolveRecord !== null}

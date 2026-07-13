@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import apiClient from '../api/client'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
+import BranchForm, { emptyBranchForm } from '../components/BranchForm'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Pagination from '../components/Pagination'
 
-const emptyForm = { branch_id: '', branch_name: '', location: '' }
+const emptyForm = emptyBranchForm
 
 function Branches() {
   const [branches, setBranches] = useState([])
@@ -20,6 +21,7 @@ function Branches() {
   const [sortDir, setSortDir] = useState('asc')
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 25
+  const navigate = useNavigate()
 
   const loadBranches = () => {
     apiClient
@@ -134,58 +136,13 @@ function Branches() {
         onClose={handleCancel}
         title={editingId ? 'Edit Branch' : 'Add Branch'}
       >
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <div>
-            <label className="block text-xs text-slate-500 mb-1">
-              ID{' '}
-              {editingId ? (
-                <span className="text-slate-400">(cannot be changed)</span>
-              ) : (
-                <span className="text-slate-400">(optional — auto-generated if blank)</span>
-              )}
-            </label>
-            <input
-              value={form.branch_id}
-              onChange={(e) => setForm({ ...form, branch_id: e.target.value })}
-              disabled={!!editingId}
-              placeholder={editingId ? '' : 'e.g. BR1001'}
-              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full disabled:bg-slate-50 disabled:text-slate-400"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-slate-500 mb-1">Branch Name</label>
-            <input
-              required
-              value={form.branch_name}
-              onChange={(e) => setForm({ ...form, branch_name: e.target.value })}
-              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-slate-500 mb-1">Location</label>
-            <input
-              required
-              value={form.location}
-              onChange={(e) => setForm({ ...form, location: e.target.value })}
-              className="border border-slate-300 rounded px-2 py-1.5 text-sm w-full"
-            />
-          </div>
-          <div className="flex gap-2 mt-1">
-            <button
-              type="submit"
-              className="bg-slate-800 text-white text-sm rounded px-4 py-1.5 hover:bg-slate-700"
-            >
-              {editingId ? 'Save Changes' : 'Add Branch'}
-            </button>
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="bg-slate-200 text-slate-700 text-sm rounded px-4 py-1.5 hover:bg-slate-300"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+        <BranchForm
+          form={form}
+          setForm={setForm}
+          editingId={editingId}
+          onSubmit={handleSubmit}
+          onCancel={handleCancel}
+        />
       </Modal>
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -200,7 +157,11 @@ function Branches() {
           </thead>
           <tbody>
             {paginated.map((branch) => (
-              <tr key={branch.branch_id} className="border-t border-slate-100">
+              <tr
+                key={branch.branch_id}
+                onClick={() => navigate(`/branches/${branch.branch_id}`)}
+                className="border-t border-slate-100 cursor-pointer hover:bg-slate-50"
+              >
                 <td className="px-4 py-2 font-mono text-xs text-slate-500">{branch.branch_id}</td>
                 <td className="px-4 py-2">
                   <Link to={`/branches/${branch.branch_id}`} className="text-slate-700 hover:underline">
@@ -208,7 +169,7 @@ function Branches() {
                   </Link>
                 </td>
                 <td className="px-4 py-2">{branch.location}</td>
-                <td className="px-4 py-2 text-right space-x-3">
+                <td className="px-4 py-2 text-right space-x-3" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => handleEdit(branch)}
                     className="text-slate-600 hover:underline text-xs"

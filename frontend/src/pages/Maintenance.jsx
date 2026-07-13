@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import apiClient from '../api/client'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
@@ -25,6 +25,7 @@ function Maintenance() {
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 25
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
 
   const deviceFilter = searchParams.get('device_id')
   const openFilter = searchParams.get('open')
@@ -321,7 +322,11 @@ function Maintenance() {
           </thead>
           <tbody>
             {paginated.map((record) => (
-              <tr key={record.maintenance_id} className="border-t border-slate-100">
+              <tr
+                key={record.maintenance_id}
+                onClick={() => navigate(`/devices/${record.device_id}`)}
+                className="border-t border-slate-100 cursor-pointer hover:bg-slate-50"
+              >
                 <td className="px-4 py-2 font-mono text-xs text-slate-500">{record.maintenance_id}</td>
                 <td className="px-4 py-2">
                   <Link to={`/devices/${record.device_id}`} className="text-slate-700 hover:underline">
@@ -336,7 +341,7 @@ function Maintenance() {
                   }
                 </td>
                 <td className="px-4 py-2">{record.date}</td>
-                <td className="px-4 py-2 text-right space-x-3">
+                <td className="px-4 py-2 text-right space-x-3" onClick={(e) => e.stopPropagation()}>
                   {!record.solution && (
                     <button
                       onClick={() => { setResolveRecord(record); setResolveText('') }}
