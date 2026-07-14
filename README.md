@@ -37,13 +37,23 @@ The app runs at `http://localhost:5173` and talks to the Flask API via
 
 | Resource | Endpoints |
 |---|---|
-| Auth | `POST /api/auth/login`, `GET /api/auth/me` |
+| Auth | `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout` |
+| Admins *(admin-only)* | `GET/POST /api/admins`, `PUT /api/admins/<id>`, `POST /api/admins/<id>/reset-password`, `DELETE /api/admins/<id>` |
 | Branches | `GET/POST /api/branches`, `GET/PUT/DELETE /api/branches/<id>` |
 | Devices | `GET/POST /api/devices`, `GET/PUT/DELETE /api/devices/<id>` (filter by `?branch_id=` / `?status=`) |
 | Users | `GET/POST /api/users`, `GET/PUT/DELETE /api/users/<id>` |
 | Maintenance | `GET/POST /api/maintenance`, `GET/PUT/DELETE /api/maintenance/<id>` (filter by `?device_id=`) |
-| Dashboard | `GET /api/dashboard/summary` — totals, status breakdown, devices per branch |
+| Dashboard | `GET /api/dashboard/summary`, `/alerts`, `/maintenance-trend` — totals, status breakdown, devices per branch, warranty/maintenance alerts (all require authentication) |
 | Health | `GET /api/health` |
+
+## Access control
+
+Every login account (`Admin`) has four independent permissions — Read, Add, Edit,
+Delete — applied uniformly across Branches, Devices, Users, and Maintenance, plus
+a separate `is_admin` flag that grants access to the **Manage Access** page for
+creating accounts and editing other accounts' permissions. The first/seeded admin
+account is granted full access. Sessions are tracked per login in the
+`admin_sessions` table; logging out invalidates that session server-side.
 
 ## Next steps
 

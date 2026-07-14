@@ -1,17 +1,19 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-
-const navItems = [
-  { to: '/', label: 'Dashboard', end: true },
-  { to: '/branches', label: 'Branches' },
-  { to: '/devices', label: 'Devices' },
-  { to: '/users', label: 'Users' },
-  { to: '/maintenance', label: 'Maintenance' },
-]
+import { useAuth, usePermissions } from '../context/AuthContext'
 
 function Layout() {
-  const { logout } = useAuth()
+  const { admin, logout } = useAuth()
+  const { isAdmin } = usePermissions()
   const navigate = useNavigate()
+
+  const navItems = [
+    { to: '/', label: 'Dashboard', end: true },
+    { to: '/branches', label: 'Branches' },
+    { to: '/devices', label: 'Devices' },
+    { to: '/users', label: 'Users' },
+    { to: '/maintenance', label: 'Maintenance' },
+    ...(isAdmin ? [{ to: '/admin-users', label: 'Manage Access' }] : []),
+  ]
 
   const handleLogout = () => {
     logout()
@@ -40,9 +42,12 @@ function Layout() {
             </NavLink>
           ))}
         </nav>
+        {admin && (
+          <p className="px-2 text-xs text-slate-400 mb-1">Signed in as {admin.username}</p>
+        )}
         <button
           onClick={handleLogout}
-          className="mt-4 text-left rounded px-3 py-2 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+          className="mt-1 text-left rounded px-3 py-2 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
         >
           Sign out
         </button>

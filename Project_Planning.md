@@ -142,6 +142,19 @@ AI:    "Possible causes: Network issue, Driver problem, IP Conflict, Hardware is
 | ID | Integer (PK) | Auto-increment |
 | Username | String | Unique, Required |
 | Password_Hash | String | bcrypt hashed |
+| Is_Admin | Boolean | Default: False. Grants access to Manage Access page |
+| Can_Read | Boolean | Default: False |
+| Can_Add | Boolean | Default: False |
+| Can_Edit | Boolean | Default: False |
+| Can_Delete | Boolean | Default: False |
+
+### AdminSession
+| Field | Type | Notes |
+|-------|------|-------|
+| ID | Integer (PK) | Auto-increment |
+| Token | String | Unique, indexed — bearer token issued at login |
+| Admin_ID | Integer (FK → Admin) | Required |
+| Created_At | DateTime | Default: now |
 
 ---
 

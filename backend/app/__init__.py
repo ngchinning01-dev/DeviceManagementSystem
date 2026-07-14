@@ -30,6 +30,13 @@ def create_app(config_class=Config):
             "ALTER TABLE devices ADD COLUMN purchase_date DATE",
             "ALTER TABLE devices ADD COLUMN warranty_expiry DATE",
             "ALTER TABLE devices ADD COLUMN cost REAL",
+            # DEFAULT 1 backfills every existing admin row with full access so
+            # nobody already using the system gets locked out on upgrade.
+            "ALTER TABLE admins ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT 1",
+            "ALTER TABLE admins ADD COLUMN can_read BOOLEAN NOT NULL DEFAULT 1",
+            "ALTER TABLE admins ADD COLUMN can_add BOOLEAN NOT NULL DEFAULT 1",
+            "ALTER TABLE admins ADD COLUMN can_edit BOOLEAN NOT NULL DEFAULT 1",
+            "ALTER TABLE admins ADD COLUMN can_delete BOOLEAN NOT NULL DEFAULT 1",
         ]:
             try:
                 db.session.execute(text(stmt))
@@ -37,10 +44,17 @@ def create_app(config_class=Config):
             except Exception:
                 db.session.rollback()
 
-        # Seed default admin account on first run.
+        # Seed default admin account on first run, with full access.
         from app.models import Admin
         if not Admin.query.first():
-            admin = Admin(username=os.environ.get('ADMIN_USERNAME', 'admin'))
+            admin = Admin(
+                username=os.environ.get('ADMIN_USERNAME', 'admin'),
+                is_admin=True,
+                can_read=True,
+                can_add=True,
+                can_edit=True,
+                can_delete=True,
+            )
             admin.set_password(os.environ.get('ADMIN_PASSWORD', 'admin123'))
             db.session.add(admin)
             db.session.commit()

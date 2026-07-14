@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import apiClient from '../api/client'
+import { usePermissions } from '../context/AuthContext'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
 import UserForm, { emptyUserForm } from '../components/UserForm'
@@ -23,6 +24,7 @@ function Users() {
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 25
   const navigate = useNavigate()
+  const { canAdd, canEdit, canDelete } = usePermissions()
 
   const loadUsers = () => {
     apiClient
@@ -122,6 +124,7 @@ function Users() {
           onImported={loadUsers}
           exportUrl="/users/export"
           exportFilename="users.xlsx"
+          canAdd={canAdd}
         />
       </div>
 
@@ -194,18 +197,22 @@ function Users() {
                 <td className="px-4 py-2">{user.email}</td>
                 <td className="px-4 py-2">{user.department}</td>
                 <td className="px-4 py-2 text-right space-x-3" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={() => handleEdit(user)}
-                    className="text-slate-600 hover:underline text-xs"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => setConfirmDeleteId(user.user_id)}
-                    className="text-red-600 hover:underline text-xs"
-                  >
-                    Delete
-                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={() => handleEdit(user)}
+                      className="text-slate-600 hover:underline text-xs"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button
+                      onClick={() => setConfirmDeleteId(user.user_id)}
+                      className="text-red-600 hover:underline text-xs"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

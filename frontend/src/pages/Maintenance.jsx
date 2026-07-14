@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import apiClient from '../api/client'
+import { usePermissions } from '../context/AuthContext'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
 import SearchableSelect from '../components/SearchableSelect'
@@ -26,6 +27,7 @@ function Maintenance() {
   const PAGE_SIZE = 25
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { canAdd, canEdit, canDelete } = usePermissions()
 
   const deviceFilter = searchParams.get('device_id')
   const openFilter = searchParams.get('open')
@@ -167,6 +169,7 @@ function Maintenance() {
           onImported={loadRecords}
           exportUrl="/maintenance/export"
           exportFilename="maintenance.xlsx"
+          canAdd={canAdd}
         />
       </div>
 
@@ -342,7 +345,7 @@ function Maintenance() {
                 </td>
                 <td className="px-4 py-2">{record.date}</td>
                 <td className="px-4 py-2 text-right space-x-3" onClick={(e) => e.stopPropagation()}>
-                  {!record.solution && (
+                  {!record.solution && canEdit && (
                     <button
                       onClick={() => { setResolveRecord(record); setResolveText('') }}
                       className="text-green-600 hover:underline text-xs"
@@ -350,18 +353,22 @@ function Maintenance() {
                       Resolve
                     </button>
                   )}
-                  <button
-                    onClick={() => handleEdit(record)}
-                    className="text-slate-600 hover:underline text-xs"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => setConfirmDeleteId(record.maintenance_id)}
-                    className="text-red-600 hover:underline text-xs"
-                  >
-                    Delete
-                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={() => handleEdit(record)}
+                      className="text-slate-600 hover:underline text-xs"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button
+                      onClick={() => setConfirmDeleteId(record.maintenance_id)}
+                      className="text-red-600 hover:underline text-xs"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

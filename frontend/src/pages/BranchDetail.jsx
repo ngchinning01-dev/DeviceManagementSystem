@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import apiClient from '../api/client'
+import { usePermissions } from '../context/AuthContext'
 import Modal from '../components/Modal'
 import ConfirmDialog from '../components/ConfirmDialog'
 import BranchForm, { emptyBranchForm } from '../components/BranchForm'
@@ -15,6 +16,7 @@ function BranchDetail() {
   const [editOpen, setEditOpen] = useState(false)
   const [form, setForm] = useState(emptyBranchForm)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const { canEdit, canDelete } = usePermissions()
 
   const loadBranch = () => {
     apiClient
@@ -61,14 +63,18 @@ function BranchDetail() {
         <Link to="/branches" className="text-sm text-slate-500 hover:underline">
           ← Back to Branches
         </Link>
-        {branch && (
+        {branch && (canEdit || canDelete) && (
           <div className="space-x-3">
-            <button onClick={handleEditOpen} className="text-sm text-slate-600 hover:underline">
-              Edit
-            </button>
-            <button onClick={() => setDeleteOpen(true)} className="text-sm text-red-600 hover:underline">
-              Delete
-            </button>
+            {canEdit && (
+              <button onClick={handleEditOpen} className="text-sm text-slate-600 hover:underline">
+                Edit
+              </button>
+            )}
+            {canDelete && (
+              <button onClick={() => setDeleteOpen(true)} className="text-sm text-red-600 hover:underline">
+                Delete
+              </button>
+            )}
           </div>
         )}
       </div>

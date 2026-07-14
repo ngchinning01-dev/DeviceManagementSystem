@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import apiClient from '../api/client'
+import { usePermissions } from '../context/AuthContext'
 import Modal from '../components/Modal'
 import ConfirmDialog from '../components/ConfirmDialog'
 import UserForm, { emptyUserForm } from '../components/UserForm'
@@ -15,6 +16,7 @@ function UserDetail() {
   const [editOpen, setEditOpen] = useState(false)
   const [form, setForm] = useState(emptyUserForm)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const { canEdit, canDelete } = usePermissions()
 
   const loadUser = () => {
     apiClient
@@ -61,14 +63,18 @@ function UserDetail() {
         <Link to="/users" className="text-sm text-slate-500 hover:underline">
           ← Back to Users
         </Link>
-        {user && (
+        {user && (canEdit || canDelete) && (
           <div className="space-x-3">
-            <button onClick={handleEditOpen} className="text-sm text-slate-600 hover:underline">
-              Edit
-            </button>
-            <button onClick={() => setDeleteOpen(true)} className="text-sm text-red-600 hover:underline">
-              Delete
-            </button>
+            {canEdit && (
+              <button onClick={handleEditOpen} className="text-sm text-slate-600 hover:underline">
+                Edit
+              </button>
+            )}
+            {canDelete && (
+              <button onClick={() => setDeleteOpen(true)} className="text-sm text-red-600 hover:underline">
+                Delete
+              </button>
+            )}
           </div>
         )}
       </div>

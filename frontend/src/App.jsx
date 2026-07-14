@@ -1,5 +1,5 @@
 import { Navigate, Routes, Route } from 'react-router-dom'
-import { AuthProvider, useAuth } from './context/AuthContext'
+import { AuthProvider, useAuth, usePermissions } from './context/AuthContext'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -10,10 +10,17 @@ import Maintenance from './pages/Maintenance'
 import BranchDetail from './pages/BranchDetail'
 import DeviceDetail from './pages/DeviceDetail'
 import UserDetail from './pages/UserDetail'
+import AdminUsers from './pages/AdminUsers'
 
 function RequireAuth({ children }) {
-  const { token } = useAuth()
+  const { token, loading } = useAuth()
+  if (token && loading) return null
   return token ? children : <Navigate to="/login" replace />
+}
+
+function RequireAdmin({ children }) {
+  const { isAdmin } = usePermissions()
+  return isAdmin ? children : <Navigate to="/" replace />
 }
 
 function App() {
@@ -36,6 +43,14 @@ function App() {
           <Route path="users" element={<Users />} />
           <Route path="users/:userId" element={<UserDetail />} />
           <Route path="maintenance" element={<Maintenance />} />
+          <Route
+            path="admin-users"
+            element={
+              <RequireAdmin>
+                <AdminUsers />
+              </RequireAdmin>
+            }
+          />
         </Route>
       </Routes>
     </AuthProvider>

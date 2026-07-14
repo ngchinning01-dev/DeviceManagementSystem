@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import apiClient from '../api/client'
+import { usePermissions } from '../context/AuthContext'
 import Modal from '../components/Modal'
 import ConfirmDialog from '../components/ConfirmDialog'
 import DeviceForm, { emptyDeviceForm } from '../components/DeviceForm'
@@ -20,6 +21,7 @@ function DeviceDetail() {
   const [editOpen, setEditOpen] = useState(false)
   const [form, setForm] = useState(emptyDeviceForm)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const { canAdd, canEdit, canDelete } = usePermissions()
 
   const loadDevice = () => {
     apiClient
@@ -110,14 +112,18 @@ function DeviceDetail() {
         <Link to="/devices" className="text-sm text-slate-500 hover:underline">
           ← Back to Devices
         </Link>
-        {device && (
+        {device && (canEdit || canDelete) && (
           <div className="space-x-3">
-            <button onClick={handleEditOpen} className="text-sm text-slate-600 hover:underline">
-              Edit
-            </button>
-            <button onClick={() => setDeleteOpen(true)} className="text-sm text-red-600 hover:underline">
-              Delete
-            </button>
+            {canEdit && (
+              <button onClick={handleEditOpen} className="text-sm text-slate-600 hover:underline">
+                Edit
+              </button>
+            )}
+            {canDelete && (
+              <button onClick={() => setDeleteOpen(true)} className="text-sm text-red-600 hover:underline">
+                Delete
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -230,12 +236,14 @@ function DeviceDetail() {
 
       <div className="flex justify-between items-center mt-6 mb-2">
         <h3 className="text-lg font-semibold text-slate-800">Maintenance History</h3>
-        <Link
-          to={`/maintenance?device_id=${deviceId}`}
-          className="text-sm bg-slate-800 text-white rounded px-4 py-1.5 hover:bg-slate-700"
-        >
-          Log maintenance for this device
-        </Link>
+        {canAdd && (
+          <Link
+            to={`/maintenance?device_id=${deviceId}`}
+            className="text-sm bg-slate-800 text-white rounded px-4 py-1.5 hover:bg-slate-700"
+          >
+            Log maintenance for this device
+          </Link>
+        )}
       </div>
 
       <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
@@ -260,7 +268,7 @@ function DeviceDetail() {
                 </td>
                 <td className="px-4 py-2">{record.date}</td>
                 <td className="px-4 py-2 text-right">
-                  {!record.solution && (
+                  {!record.solution && canEdit && (
                     <button
                       onClick={() => { setResolveRecord(record); setResolveText('') }}
                       className="text-green-600 hover:underline text-xs"

@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 import bcrypt
 
@@ -111,8 +111,25 @@ class Admin(db.Model):
     username      = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
 
+    is_admin      = db.Column(db.Boolean, nullable=False, default=False)
+    can_read      = db.Column(db.Boolean, nullable=False, default=False)
+    can_add       = db.Column(db.Boolean, nullable=False, default=False)
+    can_edit      = db.Column(db.Boolean, nullable=False, default=False)
+    can_delete    = db.Column(db.Boolean, nullable=False, default=False)
+
     def set_password(self, password):
         self.password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
     def check_password(self, password):
         return bcrypt.checkpw(password.encode(), self.password_hash.encode())
+
+
+class AdminSession(db.Model):
+    __tablename__ = 'admin_sessions'
+
+    id         = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    token      = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    admin_id   = db.Column(db.Integer, db.ForeignKey('admins.id'), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    admin = db.relationship('Admin', backref='sessions')

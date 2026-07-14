@@ -6,7 +6,7 @@ from flask import Blueprint, jsonify, request, send_file
 
 from app.extensions import db
 from app.models import Branch, Device, User
-from app.utils.auth import require_auth
+from app.utils.auth import require_permission
 from app.utils.excel_import import build_import_response, normalize_str, read_excel_rows
 from app.utils.id_gen import next_id
 
@@ -18,7 +18,7 @@ def _parse_date(val):
 
 
 @devices_bp.get('')
-@require_auth
+@require_permission('read')
 def list_devices():
     query = Device.query
 
@@ -39,7 +39,7 @@ def list_devices():
 
 
 @devices_bp.get('/export')
-@require_auth
+@require_permission('read')
 def export_devices():
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -64,14 +64,14 @@ def export_devices():
 
 
 @devices_bp.get('/<device_id>')
-@require_auth
+@require_permission('read')
 def get_device(device_id):
     device = db.get_or_404(Device, device_id)
     return jsonify(device.to_dict())
 
 
 @devices_bp.post('')
-@require_auth
+@require_permission('add')
 def create_device():
     data = request.get_json() or {}
 
@@ -112,7 +112,7 @@ def create_device():
 
 
 @devices_bp.put('/<device_id>')
-@require_auth
+@require_permission('edit')
 def update_device(device_id):
     device = db.get_or_404(Device, device_id)
     data = request.get_json() or {}
@@ -144,7 +144,7 @@ def update_device(device_id):
 
 
 @devices_bp.delete('/<device_id>')
-@require_auth
+@require_permission('delete')
 def delete_device(device_id):
     device = db.get_or_404(Device, device_id)
     db.session.delete(device)
@@ -153,7 +153,7 @@ def delete_device(device_id):
 
 
 @devices_bp.post('/import')
-@require_auth
+@require_permission('add')
 def import_devices():
     file = request.files.get('file')
     if not file or not file.filename.lower().endswith('.xlsx'):

@@ -3,7 +3,8 @@ import apiClient from '../api/client'
 
 // Hamburger (☰) dropdown menu with Add New, Import from Excel, and Export actions.
 // Replaces the old inline ExcelImport button; import result/errors show below the button.
-function ActionsMenu({ onAddNew, importUrl, onImported, exportUrl, exportFilename }) {
+// Add New / Import are hidden when the current user lacks add permission.
+function ActionsMenu({ onAddNew, importUrl, onImported, exportUrl, exportFilename, canAdd = true }) {
   const [open, setOpen] = useState(false)
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState(null)
@@ -84,19 +85,23 @@ function ActionsMenu({ onAddNew, importUrl, onImported, exportUrl, exportFilenam
 
       {open && (
         <div className="absolute right-0 mt-1 w-44 bg-white border border-slate-200 rounded-lg shadow-lg z-10 py-1">
-          <button
-            onClick={handleAddNew}
-            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-          >
-            Add New
-          </button>
-          <button
-            onClick={handleImportClick}
-            disabled={importing}
-            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-          >
-            {importing ? 'Importing...' : 'Import from Excel'}
-          </button>
+          {canAdd && (
+            <button
+              onClick={handleAddNew}
+              className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            >
+              Add New
+            </button>
+          )}
+          {canAdd && (
+            <button
+              onClick={handleImportClick}
+              disabled={importing}
+              className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            >
+              {importing ? 'Importing...' : 'Import from Excel'}
+            </button>
+          )}
           <button
             onClick={handleExport}
             className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"

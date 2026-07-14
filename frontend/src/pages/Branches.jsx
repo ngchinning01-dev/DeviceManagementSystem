@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import apiClient from '../api/client'
+import { usePermissions } from '../context/AuthContext'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
 import BranchForm, { emptyBranchForm } from '../components/BranchForm'
@@ -22,6 +23,7 @@ function Branches() {
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 25
   const navigate = useNavigate()
+  const { canAdd, canEdit, canDelete } = usePermissions()
 
   const loadBranches = () => {
     apiClient
@@ -112,6 +114,7 @@ function Branches() {
           onImported={loadBranches}
           exportUrl="/branches/export"
           exportFilename="branches.xlsx"
+          canAdd={canAdd}
         />
       </div>
 
@@ -170,18 +173,22 @@ function Branches() {
                 </td>
                 <td className="px-4 py-2">{branch.location}</td>
                 <td className="px-4 py-2 text-right space-x-3" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={() => handleEdit(branch)}
-                    className="text-slate-600 hover:underline text-xs"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => setConfirmDeleteId(branch.branch_id)}
-                    className="text-red-600 hover:underline text-xs"
-                  >
-                    Delete
-                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={() => handleEdit(branch)}
+                      className="text-slate-600 hover:underline text-xs"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button
+                      onClick={() => setConfirmDeleteId(branch.branch_id)}
+                      className="text-red-600 hover:underline text-xs"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

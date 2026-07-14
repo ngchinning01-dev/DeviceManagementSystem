@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify, request
 
 from app.extensions import db
 from app.models import Branch, Device, Maintenance
-from app.utils.auth import require_auth
+from app.utils.auth import require_permission
 
 # API for dashboard summary statistics (/api/dashboard).
 dashboard_bp = Blueprint('dashboard', __name__, url_prefix='/api/dashboard')
@@ -13,6 +13,7 @@ dashboard_bp = Blueprint('dashboard', __name__, url_prefix='/api/dashboard')
 # Aggregate counts and breakdowns used by the dashboard page (devices, branches,
 # active devices, open maintenance issues, and devices grouped by status/branch).
 @dashboard_bp.get('/summary')
+@require_permission('read')
 def summary():
     total_devices = db.session.query(Device).count()
     total_branches = db.session.query(Branch).count()
@@ -50,7 +51,7 @@ def summary():
 
 
 @dashboard_bp.get('/alerts')
-@require_auth
+@require_permission('read')
 def alerts():
     today = date.today()
     warranty_days = request.args.get('warranty_days', 30, type=int)
@@ -96,6 +97,7 @@ def alerts():
 
 
 @dashboard_bp.get('/maintenance-trend')
+@require_permission('read')
 def maintenance_trend():
     rows = (
         db.session.query(

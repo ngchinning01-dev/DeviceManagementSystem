@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import apiClient from '../api/client'
+import { usePermissions } from '../context/AuthContext'
 import ActionsMenu from '../components/ActionsMenu'
 import Modal from '../components/Modal'
 import DeviceForm, { emptyDeviceForm } from '../components/DeviceForm'
@@ -29,6 +30,7 @@ function Devices() {
   const [bulkStatus, setBulkStatus] = useState('__none__')
   const [bulkUserId, setBulkUserId] = useState('__none__')
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+  const { canAdd, canEdit, canDelete } = usePermissions()
 
   const branchFilter = searchParams.get('branch_id')
   const statusFilter = searchParams.get('status')
@@ -212,6 +214,7 @@ function Devices() {
           onImported={loadDevices}
           exportUrl="/devices/export"
           exportFilename="devices.xlsx"
+          canAdd={canAdd}
         />
       </div>
 
@@ -263,46 +266,52 @@ function Devices() {
         <div className="flex flex-wrap items-center gap-3 mb-3 px-3 py-2 bg-slate-800 text-white rounded-lg text-sm">
           <span className="font-medium whitespace-nowrap">{selectedIds.size} selected</span>
 
-          <div className="flex items-center gap-1">
-            <select
-              value={bulkStatus}
-              onChange={(e) => setBulkStatus(e.target.value)}
-              className="rounded px-2 py-1 text-slate-800 text-xs bg-white border border-slate-300"
-            >
-              <option value="__none__">Change status…</option>
-              <option>Active</option>
-              <option>Inactive</option>
-              <option>Under Maintenance</option>
-              <option>Retired</option>
-            </select>
-            <button
-              onClick={handleBulkStatus}
-              disabled={bulkStatus === '__none__'}
-              className="bg-white text-slate-800 text-xs rounded px-2 py-1 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
-            >Apply</button>
-          </div>
+          {canEdit && (
+            <div className="flex items-center gap-1">
+              <select
+                value={bulkStatus}
+                onChange={(e) => setBulkStatus(e.target.value)}
+                className="rounded px-2 py-1 text-slate-800 text-xs bg-white border border-slate-300"
+              >
+                <option value="__none__">Change status…</option>
+                <option>Active</option>
+                <option>Inactive</option>
+                <option>Under Maintenance</option>
+                <option>Retired</option>
+              </select>
+              <button
+                onClick={handleBulkStatus}
+                disabled={bulkStatus === '__none__'}
+                className="bg-white text-slate-800 text-xs rounded px-2 py-1 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              >Apply</button>
+            </div>
+          )}
 
-          <div className="flex items-center gap-1">
-            <select
-              value={bulkUserId}
-              onChange={(e) => setBulkUserId(e.target.value)}
-              className="rounded px-2 py-1 text-slate-800 text-xs bg-white border border-slate-300"
-            >
-              <option value="__none__">Reassign user…</option>
-              <option value="">— Unassign —</option>
-              {users.map((u) => <option key={u.user_id} value={u.user_id}>{u.name}</option>)}
-            </select>
-            <button
-              onClick={handleBulkReassign}
-              disabled={bulkUserId === '__none__'}
-              className="bg-white text-slate-800 text-xs rounded px-2 py-1 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
-            >Apply</button>
-          </div>
+          {canEdit && (
+            <div className="flex items-center gap-1">
+              <select
+                value={bulkUserId}
+                onChange={(e) => setBulkUserId(e.target.value)}
+                className="rounded px-2 py-1 text-slate-800 text-xs bg-white border border-slate-300"
+              >
+                <option value="__none__">Reassign user…</option>
+                <option value="">— Unassign —</option>
+                {users.map((u) => <option key={u.user_id} value={u.user_id}>{u.name}</option>)}
+              </select>
+              <button
+                onClick={handleBulkReassign}
+                disabled={bulkUserId === '__none__'}
+                className="bg-white text-slate-800 text-xs rounded px-2 py-1 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              >Apply</button>
+            </div>
+          )}
 
-          <button
-            onClick={() => setBulkDeleteOpen(true)}
-            className="text-red-300 hover:text-red-100 text-xs"
-          >Delete selected</button>
+          {canDelete && (
+            <button
+              onClick={() => setBulkDeleteOpen(true)}
+              className="text-red-300 hover:text-red-100 text-xs"
+            >Delete selected</button>
+          )}
 
           <button
             onClick={() => setSelectedIds(new Set())}
@@ -406,18 +415,22 @@ function Devices() {
                   )}
                 </td>
                 <td className="px-4 py-2 text-right space-x-3" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={() => handleEdit(device)}
-                    className="text-slate-600 hover:underline text-xs"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => setConfirmDeleteId(device.device_id)}
-                    className="text-red-600 hover:underline text-xs"
-                  >
-                    Delete
-                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={() => handleEdit(device)}
+                      className="text-slate-600 hover:underline text-xs"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button
+                      onClick={() => setConfirmDeleteId(device.device_id)}
+                      className="text-red-600 hover:underline text-xs"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

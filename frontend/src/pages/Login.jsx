@@ -18,7 +18,7 @@ function Login() {
     apiClient
       .post('/auth/login', { username, password })
       .then((res) => {
-        login(res.data.token)
+        login(res.data.token, res.data.admin)
         navigate('/', { replace: true })
       })
       .catch((err) => {
