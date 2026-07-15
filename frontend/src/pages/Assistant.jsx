@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import apiClient from '../api/client'
+import { useAssistantChat } from '../context/AssistantContext'
 
 // Read-only AI assistant: natural-language search over devices/branches/users/
-// maintenance data and general troubleshooting suggestions. Chat history is
-// kept in memory only (sent back in full on every request) — nothing is
-// persisted server-side.
+// maintenance data and general troubleshooting suggestions. Chat history lives
+// in AssistantContext (in memory only, sent back in full on every request) so
+// it survives navigating to other pages and back — nothing is persisted
+// server-side, and it's cleared on logout or a page refresh.
 function Assistant() {
-  const [messages, setMessages] = useState([])
+  const { messages, setMessages } = useAssistantChat()
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)

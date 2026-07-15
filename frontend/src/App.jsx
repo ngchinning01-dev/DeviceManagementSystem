@@ -1,5 +1,6 @@
 import { Navigate, Routes, Route } from 'react-router-dom'
 import { AuthProvider, useAuth, usePermissions } from './context/AuthContext'
+import { AssistantProvider } from './context/AssistantContext'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -27,34 +28,36 @@ function RequireAdmin({ children }) {
 function App() {
   return (
     <AuthProvider>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route
-          element={
-            <RequireAuth>
-              <Layout />
-            </RequireAuth>
-          }
-        >
-          <Route index element={<Dashboard />} />
-          <Route path="branches" element={<Branches />} />
-          <Route path="branches/:branchId" element={<BranchDetail />} />
-          <Route path="devices" element={<Devices />} />
-          <Route path="devices/:deviceId" element={<DeviceDetail />} />
-          <Route path="users" element={<Users />} />
-          <Route path="users/:userId" element={<UserDetail />} />
-          <Route path="maintenance" element={<Maintenance />} />
-          <Route path="assistant" element={<Assistant />} />
+      <AssistantProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
           <Route
-            path="admin-users"
             element={
-              <RequireAdmin>
-                <AdminUsers />
-              </RequireAdmin>
+              <RequireAuth>
+                <Layout />
+              </RequireAuth>
             }
-          />
-        </Route>
-      </Routes>
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="branches" element={<Branches />} />
+            <Route path="branches/:branchId" element={<BranchDetail />} />
+            <Route path="devices" element={<Devices />} />
+            <Route path="devices/:deviceId" element={<DeviceDetail />} />
+            <Route path="users" element={<Users />} />
+            <Route path="users/:userId" element={<UserDetail />} />
+            <Route path="maintenance" element={<Maintenance />} />
+            <Route path="assistant" element={<Assistant />} />
+            <Route
+              path="admin-users"
+              element={
+                <RequireAdmin>
+                  <AdminUsers />
+                </RequireAdmin>
+              }
+            />
+          </Route>
+        </Routes>
+      </AssistantProvider>
     </AuthProvider>
   )
 }
