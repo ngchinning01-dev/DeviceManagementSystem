@@ -23,8 +23,25 @@ SYSTEM_PROMPT = (
     "found, suggest likely general causes and next steps using your own IT "
     "knowledge. Be concise. You are read-only: you cannot create, edit, or "
     "delete any records. If asked to make a change, explain that and point the "
-    "user to the relevant page in the app instead."
+    "user to the relevant page in the app instead.\n\n"
+    "Search tools (search_devices, search_branches, search_maintenance, "
+    "search_users) only return up to a limited number of matching records and "
+    "report 'truncated': true when there were more matches than shown. Never "
+    "count or rank from a search tool's results — for any 'how many' or "
+    "'which X has the most/fewest' question, use the dedicated counting tools "
+    "(count_devices, devices_by_branch, devices_by_status) instead, since "
+    "those always reflect the true totals."
 )
+
+
+def _wrap_results(items, total):
+    returned = len(items)
+    return json.dumps({
+        'total_matches': total,
+        'returned': returned,
+        'truncated': returned < total,
+        'results': items,
+    })
 
 
 @beta_tool
@@ -44,7 +61,7 @@ def search_devices(query: str = '', branch_id: str = '', status: str = '', devic
         q = q.filter_by(status=status)
     if device_type:
         q = q.filter_by(device_type=device_type)
-    devices = q.order_by(Device.device_id).limit(500).all()
+    devices = q.order_by(Device.device_id).all()
     if query:
         needle = query.lower()
         devices = [
@@ -54,7 +71,56 @@ def search_devices(query: str = '', branch_id: str = '', status: str = '', devic
             or needle in (d.serial_number or '').lower()
             or needle in (d.ip_address or '').lower()
         ]
-    return json.dumps([d.to_dict() for d in devices[:MAX_RESULTS]])
+    return _wrap_results([d.to_dict() for d in devices[:MAX_RESULTS]], len(devices))
+
+
+@beta_tool
+def count_devices(branch_id: str = '', status: str = '', device_type: str = '') -> str:
+    """Count devices matching optional exact filters. Always use this (not search_devices)
+    for "how many devices..." questions, since search results can be truncated.
+
+    Args:
+        branch_id: exact branch ID to filter by.
+        status: exact status to filter by (Active, Inactive, Under Maintenance, Retired).
+        device_type: exact device type to filter by (e.g. Laptop, Printer, Router).
+    """
+    q = Device.query
+    if branch_id:
+        q = q.filter_by(branch_id=branch_id)
+    if status:
+        q = q.filter_by(status=status)
+    if device_type:
+        q = q.filter_by(device_type=device_type)
+    return json.dumps({'count': q.count()})
+
+
+@beta_tool
+def devices_by_branch() -> str:
+    """Get the number of devices at every branch, sorted from most to fewest devices.
+    Always use this (not search_devices) for "which branch has the most/fewest
+    devices" or "devices per branch" questions.
+    """
+    rows = (
+        db.session.query(Branch.branch_id, Branch.branch_name, db.func.count(Device.device_id))
+        .outerjoin(Device, Device.branch_id == Branch.branch_id)
+        .group_by(Branch.branch_id)
+        .order_by(db.func.count(Device.device_id).desc())
+        .all()
+    )
+    return json.dumps([
+        {'branch_id': branch_id, 'branch_name': branch_name, 'device_count': count}
+        for branch_id, branch_name, count in rows
+    ])
+
+
+@beta_tool
+def devices_by_status() -> str:
+    """Get the number of devices in each status (Active, Inactive, Under Maintenance,
+    Retired). Always use this (not search_devices) for "how many devices are
+    active/retired/etc." questions.
+    """
+    rows = db.session.query(Device.status, db.func.count(Device.device_id)).group_by(Device.status).all()
+    return json.dumps({status: count for status, count in rows})
 
 
 @beta_tool
@@ -93,7 +159,7 @@ def search_branches(query: str = '') -> str:
             b for b in branches
             if needle in b.branch_name.lower() or needle in (b.location or '').lower()
         ]
-    return json.dumps([b.to_dict() for b in branches[:MAX_RESULTS]])
+    return _wrap_results([b.to_dict() for b in branches[:MAX_RESULTS]], len(branches))
 
 
 @beta_tool
@@ -110,14 +176,31 @@ def search_maintenance(device_id: str = '', query: str = '', open_only: bool = F
         q = q.filter_by(device_id=device_id)
     if open_only:
         q = q.filter(Maintenance.solution.is_(None))
-    records = q.order_by(Maintenance.date.desc()).limit(500).all()
+    records = q.order_by(Maintenance.date.desc()).all()
     if query:
         needle = query.lower()
         records = [
             m for m in records
             if needle in m.issue.lower() or needle in (m.solution or '').lower()
         ]
-    return json.dumps([m.to_dict() for m in records[:MAX_RESULTS]])
+    return _wrap_results([m.to_dict() for m in records[:MAX_RESULTS]], len(records))
+
+
+@beta_tool
+def count_maintenance(device_id: str = '', open_only: bool = False) -> str:
+    """Count maintenance/issue records matching optional filters. Always use this
+    (not search_maintenance) for "how many issues/maintenance records..." questions.
+
+    Args:
+        device_id: exact device ID to filter by.
+        open_only: if true, only count unresolved (open) records.
+    """
+    q = Maintenance.query
+    if device_id:
+        q = q.filter_by(device_id=device_id)
+    if open_only:
+        q = q.filter(Maintenance.solution.is_(None))
+    return json.dumps({'count': q.count()})
 
 
 @beta_tool
@@ -138,10 +221,20 @@ def search_users(query: str = '', department: str = '') -> str:
             u for u in users
             if needle in u.name.lower() or needle in u.email.lower()
         ]
-    return json.dumps([u.to_dict() for u in users[:MAX_RESULTS]])
+    return _wrap_results([u.to_dict() for u in users[:MAX_RESULTS]], len(users))
 
 
-TOOLS = [search_devices, get_device, search_branches, search_maintenance, search_users]
+TOOLS = [
+    search_devices,
+    count_devices,
+    devices_by_branch,
+    devices_by_status,
+    get_device,
+    search_branches,
+    search_maintenance,
+    count_maintenance,
+    search_users,
+]
 
 
 @assistant_bp.post('/chat')
