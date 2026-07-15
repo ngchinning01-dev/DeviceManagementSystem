@@ -11,6 +11,7 @@ import BranchDetail from './pages/BranchDetail'
 import DeviceDetail from './pages/DeviceDetail'
 import UserDetail from './pages/UserDetail'
 import AdminUsers from './pages/AdminUsers'
+import Assistant from './pages/Assistant'
 
 function RequireAuth({ children }) {
   const { token, loading } = useAuth()
@@ -43,6 +44,7 @@ function App() {
           <Route path="users" element={<Users />} />
           <Route path="users/:userId" element={<UserDetail />} />
           <Route path="maintenance" element={<Maintenance />} />
+          <Route path="assistant" element={<Assistant />} />
           <Route
             path="admin-users"
             element={

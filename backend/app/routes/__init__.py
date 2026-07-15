@@ -1,4 +1,5 @@
 from app.routes.admins import admins_bp
+from app.routes.assistant import assistant_bp
 from app.routes.auth import auth_bp
 from app.routes.branches import branches_bp
 from app.routes.dashboard import dashboard_bp
@@ -16,3 +17,4 @@ def register_blueprints(app):
     app.register_blueprint(users_bp)
     app.register_blueprint(maintenance_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(assistant_bp)

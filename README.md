@@ -21,6 +21,9 @@ python run.py
 The API runs at `http://localhost:5000/api`. SQLite tables are created
 automatically on first run (`backend/instance/app.db`).
 
+To use the **Assistant** page, set `ANTHROPIC_API_KEY` in `backend/.env` to a
+valid Anthropic API key. Without it, `/api/assistant/chat` returns a 503.
+
 ## Frontend setup
 
 ```powershell
@@ -44,6 +47,7 @@ The app runs at `http://localhost:5173` and talks to the Flask API via
 | Users | `GET/POST /api/users`, `GET/PUT/DELETE /api/users/<id>` |
 | Maintenance | `GET/POST /api/maintenance`, `GET/PUT/DELETE /api/maintenance/<id>` (filter by `?device_id=`) |
 | Dashboard | `GET /api/dashboard/summary`, `/alerts`, `/maintenance-trend` — totals, status breakdown, devices per branch, warranty/maintenance alerts (all require authentication) |
+| Assistant | `POST /api/assistant/chat` — natural-language search and troubleshooting suggestions over devices/branches/users/maintenance data (requires read permission; requires `ANTHROPIC_API_KEY`, read-only, no chat history is persisted) |
 | Health | `GET /api/health` |
 
 ## Access control
@@ -57,7 +61,4 @@ account is granted full access. Sessions are tracked per login in the
 
 ## Next steps
 
-- Add the AI Assistant features (natural-language search, troubleshooting)
-  described in `Project_Planning.md` section 4.6, e.g. a `/api/assistant`
-  blueprint that wraps an LLM API call.
 - Switch `DATABASE_URL` to MySQL/PostgreSQL for production.

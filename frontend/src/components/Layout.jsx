@@ -12,6 +12,7 @@ function Layout() {
     { to: '/devices', label: 'Devices' },
     { to: '/users', label: 'Users' },
     { to: '/maintenance', label: 'Maintenance' },
+    { to: '/assistant', label: 'Assistant' },
     ...(isAdmin ? [{ to: '/admin-users', label: 'Manage Access' }] : []),
   ]
 
@@ -22,7 +23,7 @@ function Layout() {
 
   return (
     <div className="flex min-h-screen">
-      <aside className="w-60 shrink-0 bg-slate-900 text-slate-100 p-4 flex flex-col">
+      <aside className="w-60 shrink-0 bg-slate-900 text-slate-100 p-4 flex flex-col sticky top-0 h-screen overflow-y-auto">
         <h1 className="text-lg font-semibold mb-6 px-2">Device Manager</h1>
         <nav className="flex flex-col gap-1 flex-1">
           {navItems.map((item) => (
