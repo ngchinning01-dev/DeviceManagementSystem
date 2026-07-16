@@ -1,3 +1,5 @@
+// Prev/next pager shown under list-page tables, plus an "X–Y of N" range label.
+// Renders nothing when everything fits on one page.
 function Pagination({ page, totalPages, onPageChange, totalItems, pageSize }) {
   if (totalPages <= 1) return null
   const from = (page - 1) * pageSize + 1

@@ -1,3 +1,5 @@
+# CRUD + Excel import/export for maintenance/issue records (/api/maintenance).
+# A record with solution=None is "open"; setting a solution resolves it.
 import io
 
 import openpyxl

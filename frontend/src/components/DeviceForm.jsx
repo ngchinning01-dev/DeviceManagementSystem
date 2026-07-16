@@ -1,3 +1,5 @@
+// Add/Edit form for devices: identity fields, status, branch/assigned-user
+// pickers (via SearchableSelect), and purchase/warranty/cost fields.
 import SearchableSelect from './SearchableSelect'
 
 export const emptyDeviceForm = {

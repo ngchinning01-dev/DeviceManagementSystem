@@ -1,3 +1,7 @@
+// Top-level route table. Every route except /login is wrapped in RequireAuth
+// (redirects to /login if not signed in) and rendered inside Layout (sidebar +
+// page content). admin-users is additionally wrapped in RequireAdmin so only
+// accounts with is_admin=True can reach the Manage Access page.
 import { Navigate, Routes, Route } from 'react-router-dom'
 import { AuthProvider, useAuth, usePermissions } from './context/AuthContext'
 import { AssistantProvider } from './context/AssistantContext'

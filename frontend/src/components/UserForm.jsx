@@ -1,3 +1,4 @@
+// Add/Edit form for employee ("User") records — the people devices get assigned to.
 export const emptyUserForm = { user_id: '', name: '', email: '', department: '' }
 
 function UserForm({ form, setForm, editingId, onSubmit, onCancel, submitLabel }) {

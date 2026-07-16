@@ -1,3 +1,6 @@
+// Dropdown with an inline text filter, used for branch/user/device pickers
+// where a plain <select> would be too long to scan. Not a native <select>, so
+// HTML's required validation can't attach to it directly (see hidden input below).
 import { useEffect, useRef, useState } from 'react'
 
 function SearchableSelect({ options, value, onChange, labelKey, valueKey, placeholder, required = false }) {
@@ -40,6 +43,10 @@ function SearchableSelect({ options, value, onChange, labelKey, valueKey, placeh
         <span className="text-slate-400 text-xs ml-2">{open ? '▲' : '▼'}</span>
       </button>
 
+      {/* Invisible native input that mirrors `value` purely so the browser's
+          built-in required-field validation fires on the surrounding <form>
+          submit when nothing has been picked yet (this component's own
+          button/list isn't a form control the browser can validate). */}
       {required && (
         <input
           tabIndex={-1}

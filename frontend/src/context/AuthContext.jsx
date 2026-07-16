@@ -1,3 +1,8 @@
+// Holds the signed-in admin's token/identity/permissions for the whole app.
+// The token is persisted to localStorage (so a refresh stays logged in); the
+// admin object (username, is_admin, permissions) is not, so it's re-fetched
+// from /auth/me on load. usePermissions() is the read/add/edit/delete/isAdmin
+// helper that pages use to show/hide actions.
 import { createContext, useContext, useState, useEffect } from 'react'
 import apiClient from '../api/client'
 

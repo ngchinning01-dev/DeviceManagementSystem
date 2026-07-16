@@ -1,3 +1,4 @@
+# CRUD + Excel import/export for branches (/api/branches).
 import io
 
 import openpyxl
@@ -96,6 +97,8 @@ def import_branches():
     try:
         rows = read_excel_rows(file.stream, required_headers=['Branch Name'])
 
+        # Track IDs seen so far (existing + already-imported-this-batch) so
+        # duplicate/auto-generated IDs within the same file are caught too.
         existing_ids = [b.branch_id for b in Branch.query.all()]
         seen_ids = set(existing_ids)
         errors = []

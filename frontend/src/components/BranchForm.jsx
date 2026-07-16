@@ -1,3 +1,5 @@
+// Add/Edit form for branches. ID field is editable only when adding (auto-generated
+// if left blank) and locked once a branch exists, since IDs are primary keys.
 export const emptyBranchForm = { branch_id: '', branch_name: '', location: '' }
 
 function BranchForm({ form, setForm, editingId, onSubmit, onCancel, submitLabel }) {

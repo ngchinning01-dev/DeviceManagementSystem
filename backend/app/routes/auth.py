@@ -1,3 +1,4 @@
+# Login/logout/identity endpoints (/api/auth) for admin login accounts.
 from flask import Blueprint, g, jsonify, request
 
 from app.extensions import db

@@ -1,3 +1,7 @@
+# Bearer-token session auth and the route decorators (require_auth,
+# require_permission, require_admin) used to protect every API endpoint.
+# Sessions are opaque tokens stored in the admin_sessions table (no JWT/expiry —
+# a session is valid until its row is deleted, e.g. on logout).
 import secrets
 from functools import wraps
 

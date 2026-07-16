@@ -1,3 +1,9 @@
+// Devices list page: the most complex list page in the app. On top of the
+// usual search/sort/paginate/CRUD/Excel-import-export pattern (see
+// Branches.jsx), it also supports:
+//  - URL-driven filters (branch_id/status/assigned_user_id/unassigned) so
+//    other pages (Dashboard, BranchDetail, etc.) can deep-link into a filtered view.
+//  - Row checkboxes with bulk status-change, bulk reassignment, and bulk delete.
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import apiClient from '../api/client'
@@ -135,6 +141,9 @@ function Devices() {
       .catch((err) => setError(err.response?.data?.error || err.message))
   }
 
+  // Bulk actions (status change / reassign / delete) fire one request per
+  // selected device rather than a single batch endpoint, since the API has
+  // no bulk-update route; Promise.all just waits for them all to finish.
   const toggleSelect = (id) => setSelectedIds((prev) => {
     const next = new Set(prev)
     next.has(id) ? next.delete(id) : next.add(id)
@@ -175,6 +184,8 @@ function Devices() {
         (d.assigned_user_name ?? '').toLowerCase().includes(q)
     )
 
+  // numeric: true makes "DV2" sort before "DV10" (natural order) instead of
+  // treating IDs as plain strings; sensitivity: 'base' ignores case/accents.
   const sorted = [...filtered].sort((a, b) => {
     const cmp = String(a[sortCol] ?? '').localeCompare(String(b[sortCol] ?? ''), undefined, { numeric: true, sensitivity: 'base' })
     return sortDir === 'asc' ? cmp : -cmp

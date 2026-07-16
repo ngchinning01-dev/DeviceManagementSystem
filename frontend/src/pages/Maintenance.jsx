@@ -1,3 +1,7 @@
+// Maintenance/issue log page: searchable/sortable/paginated table with
+// add/edit/delete, a one-click "Resolve" action (sets the solution text on an
+// open record), and URL-driven filters (device_id/open) for deep-linking from
+// DeviceDetail and the Dashboard's overdue-maintenance list.
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import apiClient from '../api/client'
@@ -138,6 +142,8 @@ function Maintenance() {
       (r.solution ?? '').toLowerCase().includes(q)
   )
 
+  // numeric: true makes "MR2" sort before "MR10" (natural order) instead of
+  // treating IDs as plain strings; sensitivity: 'base' ignores case/accents.
   const sorted = [...filtered].sort((a, b) => {
     const cmp = String(a[sortCol] ?? '').localeCompare(String(b[sortCol] ?? ''), undefined, { numeric: true, sensitivity: 'base' })
     return sortDir === 'asc' ? cmp : -cmp

@@ -1,3 +1,6 @@
+# Read-only AI assistant (/api/assistant/chat): lets the Claude API answer
+# natural-language questions about devices/branches/users/maintenance by
+# calling the read-only tool functions defined below (never writes to the DB).
 import json
 import os
 
@@ -253,6 +256,10 @@ def chat():
 
     client = anthropic.Anthropic(api_key=api_key)
     try:
+        # tool_runner drives the full agentic loop: it sends the conversation
+        # to the model, executes any tool calls the model makes against our
+        # TOOLS functions, feeds the results back, and repeats until the
+        # model responds with plain text instead of another tool call.
         runner = client.beta.messages.tool_runner(
             model=MODEL,
             max_tokens=1024,

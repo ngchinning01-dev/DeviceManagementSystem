@@ -1,3 +1,8 @@
+// Shared axios instance used for every API call in the app.
+// - Request interceptor: attaches the stored bearer token to every request.
+// - Response interceptor: on a 401 from any endpoint other than the login
+//   call itself, clears the stored token and broadcasts 'auth:logout' so
+//   AuthContext can reset its state (e.g. session was revoked server-side).
 import axios from 'axios'
 
 const apiClient = axios.create({

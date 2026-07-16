@@ -1,3 +1,8 @@
+// Landing page: summary stat cards, warranty/overdue-maintenance alerts, and
+// charts (devices by status/branch, maintenance records per month) built with
+// Recharts. Stat cards and chart segments link/navigate into the filtered
+// Devices or Maintenance list (e.g. clicking the "Active" pie slice goes to
+// /devices?status=Active), so the dashboard doubles as a set of shortcuts.
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
@@ -16,6 +21,8 @@ const STATUS_COLORS = {
 const BAR_COLOR = '#6366F1'
 const TREND_COLOR = '#3B82F6'
 
+// Convert a '2026-07' bucket from the maintenance-trend API into a short
+// chart-axis label like "Jul '26".
 function formatMonth(ym) {
   const [year, month] = ym.split('-')
   const label = new Date(Number(year), Number(month) - 1).toLocaleString('default', { month: 'short' })

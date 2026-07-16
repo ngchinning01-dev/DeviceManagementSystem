@@ -217,6 +217,11 @@ function DeviceDetail() {
           {device.purchase_date && (
             <p className="text-sm text-slate-500">Purchase Date: {device.purchase_date}</p>
           )}
+          {/* Inline IIFE (rather than a helper function) so the badge computation
+              stays scoped to this one JSX spot: parse the ISO date as local
+              midnight (appending T00:00:00 avoids it being parsed as UTC and
+              shifting a day off in negative-UTC-offset timezones), then show
+              "Expired" / "Expiring in Nd" / nothing based on days remaining. */}
           {device.warranty_expiry && (() => {
             const today = new Date(); today.setHours(0, 0, 0, 0)
             const exp = new Date(device.warranty_expiry + 'T00:00:00')

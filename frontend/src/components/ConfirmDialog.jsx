@@ -1,3 +1,5 @@
+// Generic "are you sure?" confirmation dialog built on top of Modal, used
+// before every delete action across the app.
 import Modal from './Modal'
 
 function ConfirmDialog({ isOpen, onClose, onConfirm, message = 'Are you sure you want to delete this? This action cannot be undone.' }) {

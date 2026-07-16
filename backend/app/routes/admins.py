@@ -1,3 +1,7 @@
+# Admin-account management (/api/admins): create/update/delete login accounts
+# and their is_admin/permission flags. All routes require is_admin=True.
+# Guards against ever locking everyone out by refusing to strip admin status
+# from, or delete, the last remaining admin account.
 from flask import Blueprint, g, jsonify, request
 
 from app.extensions import db

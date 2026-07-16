@@ -1,3 +1,5 @@
+// Add/Edit form for admin login accounts: username+password (add only) plus
+// the is_admin flag and per-action (read/add/edit/delete) permission checkboxes.
 export const emptyAdminForm = {
   username: '',
   password: '',

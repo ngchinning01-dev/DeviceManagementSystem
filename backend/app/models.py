@@ -1,3 +1,6 @@
+# SQLAlchemy models for the whole app: branches, employees ("users"), devices,
+# maintenance/issue records, and admin login accounts + their sessions.
+# Each model's to_dict() defines the exact JSON shape the API returns for it.
 from datetime import date, datetime
 
 import bcrypt
@@ -5,6 +8,7 @@ import bcrypt
 from app.extensions import db
 
 
+# A physical office/site that devices are located at.
 class Branch(db.Model):
     __tablename__ = 'branches'
 
@@ -22,6 +26,7 @@ class Branch(db.Model):
         }
 
 
+# An employee that devices can be assigned to. Unrelated to Admin (login accounts).
 class User(db.Model):
     __tablename__ = 'users'
 
@@ -41,6 +46,8 @@ class User(db.Model):
         }
 
 
+# A physical asset (laptop, printer, router, etc.) tied to a branch and
+# optionally assigned to a user.
 class Device(db.Model):
     __tablename__ = 'devices'
 
@@ -82,6 +89,7 @@ class Device(db.Model):
         }
 
 
+# A logged issue for a device. solution is null while the issue is still open.
 class Maintenance(db.Model):
     __tablename__ = 'maintenance_records'
 
@@ -104,6 +112,8 @@ class Maintenance(db.Model):
         }
 
 
+# A login account for the management UI. is_admin grants access to the
+# Manage Access page; the can_* flags gate read/add/edit/delete on every resource.
 class Admin(db.Model):
     __tablename__ = 'admins'
 
@@ -124,6 +134,9 @@ class Admin(db.Model):
         return bcrypt.checkpw(password.encode(), self.password_hash.encode())
 
 
+# A single login's bearer token. Deleting a row logs that session out; there's
+# no expiry, so logout (or an admin/permission change forcing re-auth) is the
+# only way a token stops working.
 class AdminSession(db.Model):
     __tablename__ = 'admin_sessions'
 

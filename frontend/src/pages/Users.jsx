@@ -1,3 +1,5 @@
+// Employee ("User") list page: searchable/sortable/paginated table, department
+// filter, add/edit/delete, and Excel import/export. Same pattern as Branches.jsx.
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import apiClient from '../api/client'
@@ -97,6 +99,8 @@ function Users() {
         (u.department ?? '').toLowerCase().includes(q)
     )
 
+  // numeric: true makes "U2" sort before "U10" (natural order) instead of
+  // treating IDs as plain strings; sensitivity: 'base' ignores case/accents.
   const sorted = [...filtered].sort((a, b) => {
     const cmp = String(a[sortCol] ?? '').localeCompare(String(b[sortCol] ?? ''), undefined, { numeric: true, sensitivity: 'base' })
     return sortDir === 'asc' ? cmp : -cmp

@@ -1,3 +1,5 @@
+// App shell: sidebar navigation + sign-out, with the active page rendered via
+// <Outlet/>. "Manage Access" only appears in the nav for admin accounts.
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth, usePermissions } from '../context/AuthContext'
 

@@ -1,3 +1,5 @@
+// Sign-in page. On success, stores the token/admin via AuthContext and
+// redirects to the dashboard.
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import apiClient from '../api/client'

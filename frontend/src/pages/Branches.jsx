@@ -1,3 +1,5 @@
+// Branches list page: searchable/sortable/paginated table with add/edit/delete
+// (via a shared Modal + BranchForm) and Excel import/export through ActionsMenu.
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import apiClient from '../api/client'
@@ -87,6 +89,8 @@ function Branches() {
     (b) => !q || b.branch_name.toLowerCase().includes(q) || (b.location ?? '').toLowerCase().includes(q)
   )
 
+  // numeric: true makes "BR2" sort before "BR10" (natural order) instead of
+  // treating IDs as plain strings; sensitivity: 'base' ignores case/accents.
   const sorted = [...filtered].sort((a, b) => {
     const cmp = String(a[sortCol] ?? '').localeCompare(String(b[sortCol] ?? ''), undefined, { numeric: true, sensitivity: 'base' })
     return sortDir === 'asc' ? cmp : -cmp

@@ -1,3 +1,5 @@
+# CRUD + Excel import/export for devices (/api/devices), including filtering by
+# branch/status/assigned user and validation of foreign keys (branch_id, assigned_user_id).
 import io
 from datetime import date as _date
 
@@ -164,6 +166,8 @@ def import_devices():
             file.stream, required_headers=['Device Name', 'Device Type', 'Branch ID']
         )
 
+        # Snapshot valid branch/user IDs once up front rather than querying
+        # per row, since imports can be hundreds of rows.
         existing_ids = [d.device_id for d in Device.query.all()]
         seen_ids = set(existing_ids)
         valid_branch_ids = {b.branch_id for b in Branch.query.all()}

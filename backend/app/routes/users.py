@@ -1,3 +1,5 @@
+# CRUD + Excel import/export for employee records (/api/users). These are the
+# people devices can be assigned to, not admin login accounts (see routes/admins.py).
 import io
 
 import openpyxl
